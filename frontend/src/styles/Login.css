@@ -1,0 +1,54 @@
+.login-body{
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #d5e3ff; /* 淺藍色背景 */
+}
+
+.login-container {
+    background-color: rgb(231,232,238);; /* 灰色背景 */
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 350px;
+    height: 500px;
+    text-align: center;
+}
+
+.login-form {
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+}
+
+button.login-button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: rgb(63,95,144); /* 按鈕藍色 */
+    color: #ffffff;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+}
+
+button.login-button:hover {
+    background-color: #0056b3; /* 按鈕 hover 效果 */
+}
+
+p.register-link {
+    margin-top: 30px;
+}
+

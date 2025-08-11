@@ -1,0 +1,12 @@
+.login {
+    height: 50px;
+    width: 170px;
+    font-size: 15px;
+    padding: 10px 20px;
+    background-color: rgb(63,95,144);
+    color: #ffffff;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    margin-right: 5px;
+}

@@ -1,0 +1,136 @@
+.background {
+   background-image: url('../Assets/170108.jpg');
+   background-size: cover;
+   background-position: center center;
+   background-attachment: fixed;
+   width: 100%;
+   height: 100vh;
+   position: fixed;
+   top: 0;
+   left: 0;
+   z-index: -1;
+}
+
+/* .container {
+   padding: 10px;
+   max-width: 1020px;
+   height: 100%;
+   margin: 20px auto;
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+   align-items: center;
+   overflow-y: auto;
+} */
+
+.container {
+   padding: 10px;
+   max-width: 100%;
+   margin: 20px auto;
+   display: flex;
+   flex-direction: column;
+   justify-content:start;
+   align-items: center;
+   max-height: 95%;
+   overflow-y: scroll;
+}
+
+
+.little-container {
+   padding: 10px;
+   max-width: 1020px;
+   margin: 20px auto;
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+   align-items: center;
+}
+
+.image-container {
+   background-color: white;
+   top: 0px;
+   width: 700px;
+   height: 550px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+}
+
+
+
+.button-container button {
+   width: 100%;
+   height: 100%;
+
+}
+
+.audio-container {
+   width: 100%;
+   text-align: center;
+}
+
+audio {
+   width: 75%;
+}
+
+.arrow-container-left {
+   position: fixed;
+   left: 13px;
+   bottom: 13px;
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   padding: 4px;
+}
+
+.arrow-container-left button {
+   font-size: 20px;
+   padding: 4px;
+}
+
+.arrow-container-right {
+   position: fixed;
+   right: 13px;
+   bottom: 13px;
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   padding: 4px;
+}
+
+.arrow-container-right button {
+   font-size: 20px;
+   padding: 4px;
+}
+
+.leftbutton-style {
+   background-color: #52858c;
+   border-radius: 20px;
+   color: white;
+   border-color: white;
+   width: 200px;
+   /* 設置按鈕的寬度 */
+   padding: 10px;
+   /* 可以根據需要調整內邊距 */
+   text-align: center;
+   /*padding-right:100px;
+   padding-left: 100px;
+   margin: 0 10px;
+   width: 200px;*/
+}
+
+.rightbutton-style {
+   background-color: #E7775D;
+   border-radius: 20px;
+   color: white;
+   border-color: white;
+   width: 200px;
+   /* 設置按鈕的寬度 */
+   padding: 10px;
+   /* 可以根據需要調整內邊距 */
+   text-align: center;
+   /*padding-right:100px;
+   padding-left: 100px;
+   margin: 0 10px;
+   width: 200px;*/
+}

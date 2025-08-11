@@ -1,0 +1,303 @@
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.Vcontainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100vh; /* 使整個容器填滿螢幕高度 */
+  background-color: rgb(231, 232, 238); /* 淺灰色背景#E6E6E6 */
+  padding: 0px;
+  margin: 0px;
+}
+
+.header {
+  background-color: #9EB8DA; /* 淺藍色背景 */
+  color: white;
+  padding: 20px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  width: 100%; /* 確保 header 佔據整個寬度 */
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;  /* 確保 header 在其他元素之上 */
+}
+
+.content {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  padding-top: 43px; /* 確保內容區域在 header 下方 */
+  box-sizing: border-box;
+  position: relative; /* 確保 sidebar 和 main-content 相對定位 */
+}
+
+.sidebar {
+  background-color: rgb(231, 232, 238); /* 稍深的灰色側邊欄#D6D6D6 */
+  padding: 20px;
+  width: 25%; /* 側邊欄佔據寬度的 25% */
+  height: calc(100vh - 80px); /* 扣除 header 的高度，讓它填滿剩餘空間 */
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  margin-top: 30px; /* 增加上方的空白距離 */
+}
+
+.sidebar p {
+  font-size: 2rem; /* 調整字體大小，例如1.2rem */
+  font-weight: bold; /* 讓字體加粗（可選） */
+}
+
+.divider {
+  width: 1px; /* 調整分隔線寬度 */
+  background-color: #666666; /* 調深的分隔線顏色 */
+  position: fixed; /* 固定位置 */
+  top: 0; /* 從頂部開始 */
+  bottom: 0; /* 延伸至底部 */
+  left: 25%; /* 根據sidebar的寬度調整位置 */
+  z-index: 999; /* 確保分隔線在其他元素之上 */
+}
+
+.main-content {
+  padding: 20px;
+  padding-top: 100px; /* 增加上方的空白距離 */
+  width: 75%; /* 主內容區佔據寬度的 75% */
+  box-sizing: border-box;
+  height: calc(100vh - 80px); /* 使主內容區高度填滿父容器 */
+}
+
+.main-content p {
+  margin-bottom: 10px;
+}
+
+.model-name-label {
+  font-size: 1.7rem;
+  font-weight: bold;
+  line-height: 2.2rem; /* 保持行高與輸入框高度一致 */
+  margin-bottom: 0;
+  padding-top: 0.5rem; /* 可以根據需要微調 */
+}
+
+.main-content input[type="text"] {
+  height: 2.2rem; /* 調整輸入框高度 */
+  padding: 0.25rem 0.5rem;
+  box-sizing: border-box;
+}
+
+.example-title {
+  font-size: 1.2rem; /* 調整這個值來改變字體大小 */
+  font-weight: bold; /* 保持字體加粗 */
+  margin-bottom: 10px; /* 可選：如果需要調整與下方文字的間距 */
+}
+
+.example-text {
+  background-color: rgb(231, 232, 238); /* 非常淺的灰色作為範例文本背景 */
+  padding: 10px;
+  border-radius: 5px;
+  margin-top: 20px;
+  white-space: pre-wrap; /* 保留範例文本中的空白和換行 */
+  font-weight: bold; /* 保持字體加粗 */
+}
+
+.submit-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background-color: #759EDB; /* 按鈕顏色與 header 相匹配 */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .content {
+    flex-direction: column;
+    height: auto; /* 在小屏幕上高度自適應 */
+  }
+
+  .sidebar {
+    width: 100%;
+    margin-bottom: 20px;
+    height: auto; /* 在小屏幕上，讓高度自適應內容 */
+  }
+
+  .divider {
+    display: none; /* 在手機視圖中隱藏分隔線 */
+  }
+
+  .main-content {
+    width: 100%;
+    height: auto; /* 在小屏幕上高度自適應 */
+  }
+
+  .sidebar input, .sidebar button, .submit-button {
+    font-size: 1rem;
+    padding: 10px;
+  }
+
+  .header {
+    font-size: 1.2rem;
+    padding: 15px;
+  }
+
+  .example-text {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    font-size: 1rem;
+    padding: 10px;
+  }
+
+  .sidebar input, .sidebar button, .submit-button {
+    font-size: 0.9rem;
+    padding: 8px;
+  }
+
+  .example-text {
+    font-size: 0.8rem;
+  }
+}
+
+.button-Previous-Next-Page {
+  color: rgb(63,95,144);
+  text-align: center;
+  font-family: 'Microsoft Sans Serif';
+  font-size: 1rem;
+  font-weight: 400;
+  width: 6rem;
+  height: 3rem;
+  display: inline-flex;
+  padding: 0.8rem 1rem;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50px;
+  background: rgba(197, 209, 211, 0.51);
+  border: 2px solid rgb(120, 120, 138);
+  cursor: pointer;
+  /* position: fixed;  固定在視窗上 */
+  bottom: 50px; /* 與底部保持20px距離，您可以根據需要調整這個值 */
+  }
+
+.startbutton {
+      color: #ffffff;
+      text-align: center;
+      font-family: 'Microsoft Sans Serif', sans-serif;
+      font-size: 1rem; /* 相對單位 */
+      font-weight: 400;
+      width: 8rem;
+      height: 3rem;
+      padding: 0.8rem 1rem;
+      border-radius: 50px;
+      background: rgb(63,95,144);
+      border: none;
+      cursor: pointer;
+      margin-top: 30px; /* 調整這個值以控制按鈕下移的距離 */
+
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+}
+
+.endbutton {
+  color: rgb(63,95,144);
+  text-align: center;
+  font-family: 'Microsoft Sans Serif', sans-serif;
+  font-size: 1rem; /* 相對單位 */
+  font-weight: 400;
+  width: 8rem;
+  height: 3rem;
+  padding: 0.8rem 1rem;
+  border-radius: 50px;
+  background: rgba(197, 209, 211, 0.51);
+  border: 2px solid rgb(120, 120, 138);
+  cursor: pointer;
+  margin-top: 30px; /* 調整這個值以控制按鈕下移的距離 */
+
+
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.buttonspace {
+  display: flex;
+  justify-content: center;
+  margin-top: auto; /* 自動填充空間，將按鈕推到最下方 */
+  margin-bottom: 20px; /* 保留與底部的間隔 */
+  padding-bottom: 170px; /* 如果需要，可以增加padding來控制距離 */
+}
+
+.modelbutton {
+  /* color: rgb(63,95,144); */
+  text-align: center;
+  font-family: 'Microsoft Sans Serif';
+  font-size: 1rem;
+  font-weight: 400;
+  height: 3rem;
+  display: inline-flex;
+  padding: 0.8rem 1rem;
+  justify-content: center;
+  align-items: center;
+  /* border-radius: 50px; */
+  /* background: rgba(197, 209, 211, 0.51);
+  border: 2px solid rgb(120, 120, 138); */
+  cursor: pointer;
+  font-style: normal;
+  line-height: normal;
+  display: inline-flex;
+  padding: 13px 16px;
+  align-items: center;
+  gap: 481px;
+  background: white;
+  border-color: rgba(197, 209, 211, 0.51);
+}
+
+.button-submit {
+
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  width: 96px;
+  height: 50px;
+  display: inline-flex;
+  padding: 13px 16px;
+  justify-content: center;
+  align-items: center;
+  gap: 481px;
+  border-radius: 50px;
+  background: rgba(197, 209, 211, 0.51);
+  border-color: white;
+}
+
+.login {
+  height: 50px;
+  width: 150px;
+  font-size: 15px;
+  padding: 10px 20px;
+  background-color: rgb(63,95,144);
+  color: #ffffff;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+.header-content {
+  margin-left: 64px; /* 内部内容離左邊64像素 */
+  width: calc(100% - 70px); /* 確保内部内容的寬度 */
+  font-size: 24px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+}

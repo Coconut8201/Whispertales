@@ -1,0 +1,9 @@
+# 專案環境設定
+./idea
+
+# 專案內容
+.env
+node_modules/
+build/
+
+.DS_Store
