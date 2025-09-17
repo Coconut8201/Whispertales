@@ -9,10 +9,11 @@ Whispertales is an AI-powered storytelling platform that combines story generati
 ## Development Commands
 
 ### Backend Development (in `/backend` directory)
-- **Build**: `npm run build` - Compiles TypeScript to JavaScript in `./build` directory
-- **Development**: `npm run dev` - Runs TypeScript compiler in watch mode with nodemon for auto-restart
-- **Development (kill port)**: `npm run noportdev` - Same as dev but kills port 7943 first
-- **Production**: `npm start` - Runs the compiled application from `./build/app.js`
+- **Build**: `pnpm run build` - Compiles TypeScript to JavaScript in `./build` directory
+- **Development**: `pnpm run dev` - Runs TypeScript compiler in watch mode with nodemon for auto-restart
+- **Development (kill port)**: `pnpm run noportdev` - Same as dev but kills port 7943 first
+- **Production**: `pnpm start` - Runs the compiled application from `./build/app.js`
+- **Install dependencies**: `pnpm install` - Install all project dependencies
 - **Process Management**: PM2 configuration available in `ecosystem.config.js` for production deployment
 
 ### Project Structure
