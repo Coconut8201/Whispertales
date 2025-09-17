@@ -1,7 +1,7 @@
 import { useState, useRef, ChangeEvent, FormEvent, useEffect } from 'react';
 import { getVoiceList, UploadVoice } from "../utils/tools/fetch.ts";
 import { useNavigate } from 'react-router-dom';
-import '../styles/Voice.css';
+import '../styles/ChildrenTheme.css';
 import React from 'react';
 
 export default function Voice() {
@@ -57,7 +57,7 @@ export default function Voice() {
       setIsRecording(true);
     } catch (err) {
       console.error('Error accessing media devices.', err);
-      alert('無法訪問媒體設備。請檢查您的權限設置。');
+      alert('🚫 無法訪問麥克風！請檢查瀏覽器權限設置。');
     }
   };
 
@@ -86,7 +86,7 @@ export default function Voice() {
     }
 
     if (voiceOptions.includes(audioName)) {
-      alert('模型名稱已存在');
+      alert('⚠️ 這個模型名稱已經存在了！請選擇其他名稱。');
       return;
     }
     
@@ -94,109 +94,193 @@ export default function Voice() {
       try {
         setIsLoading(true);
         await UploadVoice(audioBlob, audioName);
-        alert('音檔上傳成功');
+        alert('🎉 語音模型上傳成功！現在您可以使用這個聲音來生成故事了！');
         // if (audioUrl) {
         //   URL.revokeObjectURL(audioUrl);
         //   setAudioUrl(null);
         // }
       } catch (error) {
         console.error('上傳音檔時發生錯誤:', error);
-        alert('音檔上傳失敗。請稍後再試。');
+        alert('😔 語音模型上傳失敗，請稍後再試。');
       } finally {
         setIsLoading(false);
       }
     } else {
-      alert('未上傳任何音檔');
+      alert('📢 請先錄製語音才能上傳喔！');
     }
   };
 
   return (
-    <div className="Vcontainer">
-      <div className="header">
-        <div className='header-content'>
-          Whisper Tales
-        </div>
-        <button onClick={() => navigate('/style')} className="login">
-          返回故事生成
-        </button>
+    <div className="children-theme">
+      <div className="children-header">
+        <h1>🎤 Whisper Tales 語音工作室</h1>
       </div>
-      <div className="content">
-        <div className="sidebar">
-          <p>現有語音模型：</p>
-          {voiceOptions.map((voice, index) => (
-            <React.Fragment key={voice}>
-              <label className='modelbutton'>{voice}</label>
-              {index < voiceOptions.length - 1 && '\u00A0\u00A0'}
-            </React.Fragment>
-          ))}
-        </div>
-        <div className="divider"></div>
-        <div className="main-content">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
-            <p className="model-name-label" style={{ marginRight: '10px', whiteSpace: 'nowrap', textAlign: 'center' }}>模型名稱：</p>
-            <input
-              type="text"
-              value={audioName}
-              onChange={handleInputChange}
-              style={{ height: '2.2rem', padding: '0.25rem 0.5rem' }}
-              placeholder="請輸入英文"
-            />
-          </div>
-          <div className='buttonspace'>
-            <button
-              type="button"
-              onClick={startRecording}
-              disabled={isRecording}
-              className='startbutton'
-            >
-              開始錄製
-            </button>
-            &nbsp;&nbsp;&nbsp;
-            <button
-              type="button"
-              onClick={stopRecording}
-              disabled={!isRecording}
-              className='endbutton'
-            >
-              結束錄製
-            </button>
-          </div>
-          {isRecording && (
-            <div style={{
-              color: 'red',
-              marginTop: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
+
+      <div className="children-container">
+        <div className="children-row" style={{ alignItems: 'flex-start', gap: '32px' }}>
+          {/* 側邊欄 - 現有語音模型 */}
+          <div className="children-card" style={{ flex: '0 0 300px' }}>
+            <h3 style={{
+              fontSize: 'var(--font-size-lg)',
+              color: 'var(--text-primary)',
+              marginBottom: '20px',
+              textAlign: 'center'
             }}>
-              <div style={{
-                width: '10px',
-                height: '10px',
-                backgroundColor: 'red',
-                borderRadius: '50%',
-                animation: 'pulse 1s infinite'
-              }}></div>
-              正在錄音中... {Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, '0')}
+              🎵 現有語音模型
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {voiceOptions.length === 0 ? (
+                <p style={{ color: 'var(--text-secondary)', textAlign: 'center' }}>
+                  還沒有語音模型喔！
+                </p>
+              ) : (
+                voiceOptions.map((voice, index) => (
+                  <div
+                    key={voice}
+                    className="children-btn children-btn-secondary"
+                    style={{
+                      padding: '12px 16px',
+                      fontSize: 'var(--font-size-sm)',
+                      cursor: 'default',
+                      transform: 'none'
+                    }}
+                  >
+                    🔊 {voice}
+                  </div>
+                ))
+              )}
             </div>
-          )}
-          {audioUrl && <audio src={audioUrl} controls />}
-          <form onSubmit={handleSubmit}>
-            <p className="example-title">範例文本</p>
-            <p className="example-text">
-            從前有一座美麗的森林，住著一隻聰明的小狐狸叫小紅。她最喜歡在夜晚抬頭看星星。有一天，小紅發現天上有一顆特別明亮的星星，閃爍著她從未見過的光芒。  
-            </p>
-            <div className='buttonspace'>
+          </div>
+
+          {/* 主內容區 */}
+          <div className="children-card" style={{ flex: 1 }}>
+            <h3 style={{
+              fontSize: 'var(--font-size-lg)',
+              color: 'var(--text-primary)',
+              marginBottom: '24px',
+              textAlign: 'center'
+            }}>
+              ✨ 創建新的語音模型
+            </h3>
+
+            {/* 模型名稱輸入 */}
+            <div className="children-row" style={{ marginBottom: '24px' }}>
+              <label className="children-label" style={{ flex: '0 0 120px' }}>
+                📝 模型名稱：
+              </label>
+              <input
+                type="text"
+                value={audioName}
+                onChange={handleInputChange}
+                className="children-input"
+                placeholder="請輸入英文名稱"
+                style={{ flex: 1 }}
+              />
+            </div>
+
+            {/* 錄音按鈕 */}
+            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginBottom: '24px' }}>
               <button
-                type="submit"
-                className="button-Previous-Next-Page"
-                disabled={!audioBlob || isLoading}
+                type="button"
+                onClick={startRecording}
+                disabled={isRecording}
+                className={`children-btn children-btn-success ${isRecording ? '' : 'children-btn-large'}`}
+                style={{ opacity: isRecording ? 0.5 : 1 }}
               >
-                {isLoading ? '上傳中...' : '送出'}
+                {isRecording ? '🔴 錄音中...' : '🎙️ 開始錄製'}
+              </button>
+
+              <button
+                type="button"
+                onClick={stopRecording}
+                disabled={!isRecording}
+                className={`children-btn children-btn-warning ${!isRecording ? '' : 'children-btn-large'}`}
+                style={{ opacity: !isRecording ? 0.5 : 1 }}
+              >
+                ⏹️ 結束錄製
               </button>
             </div>
-          </form>
+
+            {/* 錄音狀態顯示 */}
+            {isRecording && (
+              <div className="children-card" style={{
+                background: 'linear-gradient(135deg, #ff6b6b 0%, #ffd93d 100%)',
+                color: 'white',
+                textAlign: 'center',
+                marginBottom: '24px',
+                padding: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+                  <div className="children-record-btn recording" style={{ width: '24px', height: '24px' }}>
+                    🔴
+                  </div>
+                  <span style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'bold' }}>
+                    正在錄音中... {Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, '0')}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* 音訊播放 */}
+            {audioUrl && (
+              <div className="children-card" style={{ textAlign: 'center', marginBottom: '24px' }}>
+                <h4 style={{ color: 'var(--text-primary)', marginBottom: '12px' }}>
+                  🎧 預覽錄音
+                </h4>
+                <audio src={audioUrl} controls style={{ maxWidth: '100%' }} />
+              </div>
+            )}
+
+            {/* 範例文本 */}
+            <div className="children-card" style={{ background: 'var(--bg-secondary)', marginBottom: '24px' }}>
+              <h4 style={{
+                color: 'var(--text-primary)',
+                marginBottom: '12px',
+                fontSize: 'var(--font-size-md)'
+              }}>
+                📖 範例文本
+              </h4>
+              <p style={{
+                background: 'var(--bg-card)',
+                padding: '16px',
+                borderRadius: 'var(--border-radius-md)',
+                color: 'var(--text-primary)',
+                lineHeight: '1.6',
+                margin: 0
+              }}>
+                從前有一座美麗的森林，住著一隻聰明的小狐狸叫小紅。她最喜歡在夜晚抬頭看星星。有一天，小紅發現天上有一顆特別明亮的星星，閃爍著她從未見過的光芒。
+              </p>
+            </div>
+
+            {/* 提交表單 */}
+            <form onSubmit={handleSubmit} style={{ textAlign: 'center' }}>
+              <button
+                type="submit"
+                className="children-btn children-btn-primary children-btn-large"
+                disabled={!audioBlob || isLoading}
+                style={{
+                  opacity: (!audioBlob || isLoading) ? 0.5 : 1,
+                  marginBottom: '20px'
+                }}
+              >
+                {isLoading ? '🔄 上傳中...' : '🚀 提交語音模型'}
+              </button>
+            </form>
+
+            {/* 返回按鈕 */}
+            <div style={{ textAlign: 'center' }}>
+              <button
+                onClick={() => navigate('/style')}
+                className="children-btn children-btn-secondary"
+              >
+                🏠 返回故事生成
+              </button>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* 載入遮罩 */}
       {isLoading && (
         <div style={{
           position: 'fixed',
@@ -204,17 +288,24 @@ export default function Voice() {
           left: 0,
           width: '100%',
           height: '100%',
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          background: 'rgba(0, 0, 0, 0.7)',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
           zIndex: 1000
         }}>
-          <div style={{
-            color: 'white',
-            fontSize: '1.2rem'
-          }}>
-            正在上傳音檔，請稍候...
+          <div className="children-card" style={{ textAlign: 'center', maxWidth: '300px' }}>
+            <div className="children-loading">
+              <div className="children-loading-spinner"></div>
+            </div>
+            <p style={{
+              color: 'var(--text-primary)',
+              fontSize: 'var(--font-size-lg)',
+              fontWeight: 'bold',
+              margin: 0
+            }}>
+              🎵 正在處理您的語音...
+            </p>
           </div>
         </div>
       )}
