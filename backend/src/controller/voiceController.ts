@@ -2,8 +2,8 @@ import { Controller } from "../interfaces/Controller";
 import { Request, Response } from "express";
 import path from 'path';
 import fs from 'fs';
-import OpenCC from 'opencc-js';
-const converter = OpenCC.Converter({ from: 'tw', to: 'cn' });
+import { OpenCC } from 'opencc';
+const converter: OpenCC = new OpenCC('t2s.json');
 import { callLocalWhisper } from "../utils/tools/fetch";
 import dotenv from 'dotenv';
 dotenv.config();
@@ -23,7 +23,7 @@ export class VoiceController extends Controller{
         }
 
         try {
-            const convertedText = converter(infoText) + '。\n\n';
+            const convertedText = await converter.convertPromise(infoText) + '。\n\n';
             await fs.promises.appendFile(infoFullPath, convertedText);
         } catch (error) {
             console.error(`轉換文字失敗: ${infoText}`, error);
