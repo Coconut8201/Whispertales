@@ -1,0 +1,124 @@
+version: '3.8'
+
+services:
+  # MongoDB 資料庫
+  mongodb:
+    image: mongo:7
+    container_name: whispertales-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-password123}
+      MONGO_INITDB_DATABASE: ${MONGO_DB_NAME:-whispertales}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - whispertales-network
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 後端 API 服務
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: whispertales-backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=7943
+      - mongoDB_api=mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-password123}@mongodb:27017/${MONGO_DB_NAME:-whispertales}?authSource=admin
+      - CORS_Options=http://localhost:3000,http://localhost:80,http://nginx
+      - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-key}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_TRANSLATE_API_KEY=${GOOGLE_TRANSLATE_API_KEY}
+      - dev_saveF5ttsAudio=/app/audio
+      - makeZhuyinAPI=${MAKE_ZHUYIN_API:-http://localhost:8000/make_zhuyin}
+    ports:
+      - "7943:7943"
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_audio:/app/audio
+      - backend_temp:/app/temp
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - whispertales-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:7943/story"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 前端服務
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: whispertales-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - whispertales-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: whispertales-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - whispertales-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# 持久化存儲卷
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+  backend_uploads:
+    driver: local
+  backend_audio:
+    driver: local
+  backend_temp:
+    driver: local
+  nginx_logs:
+    driver: local
+
+# 網路配置
+networks:
+  whispertales-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

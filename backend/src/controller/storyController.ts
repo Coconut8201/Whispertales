@@ -5,7 +5,7 @@ import { sdModelOption, getSDModelList } from "../utils/tools/LLM_fetch_images";
 import { storyInterface } from "../interfaces/storyInterface";
 import { fetchImage } from "../utils/tools/fetch";
 import { RoleFormInterface } from "../interfaces/RoleFormInterface";
-import { isObjectValid, generateStory } from "../utils/tools/tool";
+import { isObjectValid, generateStory, GenImagePrompt } from "../utils/tools/tool";
 import PQueue from 'p-queue';
 import fs from "fs";
 import path from 'path';  
@@ -134,52 +134,10 @@ export class StoryController extends Controller {
     }
   };
 
-  public async TakeVoice(Request: Request, Response: Response) {
-    try {
-      const { storyId } = Request.body;
 
-      if (!storyId) {
-        return Response.status(400).send('storyId is required');
-      }
-
-      const filePath = path.resolve(process.env.dev_saveF5ttsAudio!, `Saved_${storyId}.wav`);
-      // console.log(`filePath = ${filePath}`);
-
-      if (!fs.existsSync(filePath)) {
-        console.error('File not found:', filePath);
-        return Response.status(404).send('File not found');
-      }
-
-      const stat = fs.statSync(filePath);
-      Response.writeHead(200, {
-        'Content-Type': 'audio/wav',
-        'Content-Length': stat.size,
-        'Content-Disposition': `attachment; filename=Saved_${storyId}.wav`
-      });
-
-      const fileStream = fs.createReadStream(filePath);
-
-      fileStream.on('error', (error) => {
-        console.error('Error reading file:', error);
-        Response.status(500).end('Error reading file');
-      });
-
-      fileStream.pipe(Response);
-
-      fileStream.on('end', () => {
-        console.log('File sent successfully');
-        Response.end();
-      });
-
-    } catch (error) {
-      console.error('Error processing request:', error);
-      // Response.status(500).send('Internal Server Error');
-    }
-  }
-
-  public async makezhuyin(Request: Request, Response: Response) {4 
+  public async makezhuyin(Request: Request, Response: Response) {
     let { text } = Request.body;
-    
+
     try {
         let result = await fetch(`${process.env.makeZhuyinAPI!}`, {
             method: 'POST',
@@ -188,12 +146,48 @@ export class StoryController extends Controller {
             },
             body: JSON.stringify({ text: text })
         });
-        
+
         const data = await result.json();
         Response.json(data);
     } catch (error) {
         console.error('Error in makezhuyin:', error);
         Response.status(500).json({ error: '轉換注音失敗' });
     }
-}
+  }
+
+  /**
+   * 生成圖片提示詞
+   * @param Request 包含 storyArray, storyId, roleform 的請求
+   * @example http://localhost:7943/story/llm/genimageprompt post
+   * {
+   *   "storyArray": ["故事內容1", "故事內容2"],
+   *   "storyId": "story_id",
+   *   "roleform": {"style":"帥貓咪","mainCharacter":"","description":"","otherCharacters":[]}
+   * }
+   */
+  public GenImagePrompt = async (Request: Request, Response: Response) => {
+    try {
+      const { storyArray, storyId, roleform } = Request.body;
+
+      if (!storyArray || !storyId || !roleform) {
+        return Response.status(400).json({
+          success: false,
+          message: "缺少必要參數：storyArray, storyId, roleform"
+        });
+      }
+
+      await GenImagePrompt(storyArray, storyId, roleform);
+
+      return Response.status(200).json({
+        success: true,
+        message: "圖片提示詞生成成功"
+      });
+    } catch (error: any) {
+      console.error('Error in GenImagePrompt:', error);
+      return Response.status(500).json({
+        success: false,
+        message: 'GenImagePrompt Error: ' + error.message
+      });
+    }
+  }
 }

@@ -52,6 +52,7 @@ export async function StartStory_api(storyIdinput: string): Promise<any> {
     try {
         const response = await fetch(apis.startStory, {
             method: 'POST',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -107,6 +108,7 @@ export async function GetVoice(storyId: string, pageIndex: number): Promise<Blob
         console.log(`playload: ${JSON.stringify(playload)}`);
         const response = await fetch(apis.GetVoice, {
             method: 'POST',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -140,6 +142,7 @@ export async function UploadVoice(audioBlob: Blob, audioName: string): Promise<{
     try {
         const response = await fetch(apis.uploadVoice, {
             method: 'POST',
+            credentials: 'include',
             body: formData,
         });
 
@@ -344,7 +347,7 @@ export async function verifyStoryOwnership(storyId: string): Promise<{ success: 
                 'Content-Type': 'application/json'
             }
         });
-        
+
         const responseData: { success: boolean, message: string } = await response.json();
         if (!response.ok || !responseData.success) {
             return { success: false };
@@ -353,5 +356,37 @@ export async function verifyStoryOwnership(storyId: string): Promise<{ success: 
     } catch (error) {
         console.error('verifyStoryOwnership fail: ', error);
         return { success: false };
+    }
+}
+
+export async function genImagePrompt(storyArray: string[], storyId: string, roleform: any): Promise<{ success: boolean, message?: string }> {
+    try {
+        const response = await fetch(apis.GenImagePrompt, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                storyArray,
+                storyId,
+                roleform
+            })
+        });
+
+        const responseData: { success: boolean, message: string } = await response.json();
+        if (!response.ok || !responseData.success) {
+            return {
+                success: false,
+                message: responseData.message || `HTTP Error: ${response.status}`
+            };
+        }
+        return { success: true, message: responseData.message };
+    } catch (error) {
+        console.error('genImagePrompt fail: ', error);
+        return {
+            success: false,
+            message: error instanceof Error ? error.message : '生成圖片提示詞失敗'
+        };
     }
 }
