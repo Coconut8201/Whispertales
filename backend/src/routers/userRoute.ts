@@ -49,36 +49,21 @@ export class UserRoute extends Route {
       this.Controller.DeleteUser,
     );
 
-    // 收藏功能（需要認證 + 查詢參數驗證）
-    this.router.post(
-      `${this.url}/addfav`,
-      authMiddleware,
-      validateQuery(["bookid"]),
-      this.Controller.AddFavorite,
-    );
-
-    this.router.post(
-      `${this.url}/remfav`,
-      authMiddleware,
-      validateQuery(["bookid"]),
-      this.Controller.RemoveFavorite,
-    );
-
     // 用戶資料（需要認證）
-    this.router.get("/profile", authenticateToken, userController.GetProfile);
+    this.router.get("/profile", authenticateToken, userController.GetUserProfile);
     this.router.put(
       "/profile",
       authenticateToken,
-      userController.UpdateProfile,
+      userController.UpdateUserProfile,
     );
 
     // 驗證路由
-    this.router.get(`${this.url}/verify-auth`, userController.verifyAuth);
+    this.router.get(`${this.url}/verify-auth`, userController.VerifyAuth);
     this.router.get(
       `${this.url}/verify-ownership`,
       authenticateToken,
       validateQuery(["storyId"]),
-      userController.verifyOwnership,
+      userController.VerifyOwnership,
     );
   }
 }

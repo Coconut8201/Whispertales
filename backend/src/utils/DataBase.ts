@@ -74,14 +74,6 @@ export class DataBase {
     return await StoryService.updateImageBase64(_id, imageBase64);
   }
 
-  static async AddFav(story_id: string) {
-    return await StoryService.addToFavorite(story_id);
-  }
-
-  static async RemoveFav(story_id: string) {
-    return await StoryService.removeFromFavorite(story_id);
-  }
-
   // ==================== User 相關方法 ====================
 
   static async isNameTaken(name: string): Promise<boolean> {
