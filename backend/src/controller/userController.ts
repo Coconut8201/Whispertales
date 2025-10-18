@@ -1,5 +1,6 @@
 import { Controller } from "../interfaces/Controller";
 import { Request, Response } from "express";
+import { UserService } from '../database';
 import { DataBase } from "../utils/DataBase";
 import jwt from "jsonwebtoken";
 import { asyncHandler } from "../middleware/errorMiddleware";
@@ -30,7 +31,7 @@ export class UserController extends Controller {
     }
 
     // 驗證用戶
-    const result = await DataBase.VerifyUser(userName, userPassword);
+    const result = await UserService.verifyUser(userName, userPassword);
 
     if (!result.success) {
       // 記錄詳細錯誤資訊
@@ -136,13 +137,11 @@ export class UserController extends Controller {
   public AddUser = asyncHandler(async (req: Request, res: Response) => {
     const { userName, userPassword, permissions } = req.body;
 
-    // ✅ 1. 記錄註冊嘗試（開發環境）
     if (process.env.NODE_ENV !== "production") {
       console.log(`[AddUser Controller] 註冊嘗試: ${userName}`);
     }
 
-    // ✅ 2. 呼叫 Service 層方法
-    const result = await DataBase.SaveNewUser(
+    const result = await UserService.createUser(
       userName,
       userPassword,
       permissions || "user", // 默認為普通用戶

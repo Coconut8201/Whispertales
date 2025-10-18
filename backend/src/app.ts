@@ -1,5 +1,5 @@
 import express from "express";
-import { DataBase } from "./utils/DataBase";
+import { ConnectionManager } from "./database";
 import cors from "cors";
 import { router } from "./Routers";
 import dotenv from "dotenv";
@@ -13,7 +13,18 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 7943;
-const DB = new DataBase(process.env.MONGO_DB_Connect!);
+
+// 初始化資料庫連線（單例模式，全局只連線一次）
+const connectionManager = ConnectionManager.getInstance();
+connectionManager
+  .connect(process.env.MONGO_DB_Connect!)
+  .then(() => {
+    console.log("[App] 資料庫連線成功");
+  })
+  .catch((error) => {
+    console.error("[App] 資料庫連線失敗:", error);
+    process.exit(1); // 連線失敗則終止應用
+  });
 
 //系統伺服器
 const corsOptions = {
