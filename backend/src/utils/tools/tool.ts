@@ -1,6 +1,4 @@
 import { fetchImage } from "./fetch"; 
-import { OpenCC } from 'opencc';
-const converter: OpenCC = new OpenCC('t2s.json');
 import { caseSdModelUse } from "./sdModel_tool";
 import { GenImg_prompt_En_array } from "./LLM_fetch_images";
 import { DataBase } from "../DataBase";

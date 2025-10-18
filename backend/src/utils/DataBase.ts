@@ -10,8 +10,8 @@ export class DataBase{
     constructor(url:string){
         this.init(url).then(()=>{
             console.log(`success: connect to  ${url}`)
-        }).catch(()=>{
-            console.log(`error: can't connect to ${url}`)
+        }).catch((error)=>{
+            console.log(`error: can't connect to ${url}, ${error}`)
         })
     }
     async init(url:string): Promise<void>{

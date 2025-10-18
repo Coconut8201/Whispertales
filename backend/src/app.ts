@@ -7,8 +7,8 @@ import cookieParser from 'cookie-parser';
 dotenv.config();
 
 const app = express()
-const port = process.env || 7943
-const DB = new DataBase(process.env.mongoDB_api!);
+const port = process.env.PORT || 7943
+const DB = new DataBase(process.env.MONGO_DB_Connect!);
 
 //系統伺服器
 const corsOptions = {
