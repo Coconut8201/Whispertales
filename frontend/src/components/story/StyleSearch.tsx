@@ -1,5 +1,15 @@
-import React from 'react';
-import '../../styles/ChildrenTheme.css';
+import React from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+import { Search, Sparkles, Rocket, Lightbulb } from "lucide-react";
 
 interface StyleSearchProps {
   searchQuery: string;
@@ -14,127 +24,99 @@ const StyleSearch: React.FC<StyleSearchProps> = ({
   onSearchChange,
   onSearch,
   disabled = false,
-  placeholder = "選擇一個喜歡的繪畫風格..."
+  placeholder = "選擇一個喜歡的繪畫風格...",
 }) => {
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter' && !disabled) {
+    if (event.key === "Enter" && !disabled) {
       onSearch();
     }
   };
 
-  const hasSelection = searchQuery.trim() !== '';
+  const hasSelection = searchQuery.trim() !== "";
 
   return (
-    <div className="children-card" style={{ 
-      marginBottom: '32px',
-      textAlign: 'center'
-    }}>
-      {/* 搜尋標題 */}
-      <div style={{ marginBottom: '20px' }}>
-        <h2 style={{
-          color: '#ff6b6b',
-          fontSize: '24px',
-          fontWeight: 'bold',
-          margin: 0,
-          marginBottom: '8px'
-        }}>
+    <Card className="border-2 border-children-primary/30">
+      <CardHeader className="text-center pb-3 sm:pb-4">
+        <div className="flex justify-center mb-2">
+          <Badge variant="default" className="text-sm sm:text-base">
+            <Search className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+            繪畫風格選擇
+          </Badge>
+        </div>
+        <CardTitle className="text-lg sm:text-xl md:text-2xl">
           🎨 選擇你最喜歡的繪畫風格
-        </h2>
-        <p style={{
-          color: '#636e72',
-          fontSize: '16px',
-          margin: 0
-        }}>
+        </CardTitle>
+        <CardDescription className="text-xs sm:text-sm">
           點擊下面的圖片選擇風格，然後點擊「開始創作」按鈕！
-        </p>
-      </div>
+        </CardDescription>
+      </CardHeader>
 
-      {/* 搜尋輸入區域 */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '16px',
-        maxWidth: '600px',
-        margin: '0 auto',
-        flexWrap: 'wrap',
-        justifyContent: 'center'
-      }}>
-        {/* 輸入框 */}
-        <div style={{ flex: 1, minWidth: '250px' }}>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            readOnly
-            disabled={disabled}
-            className="children-input"
-            style={{
-              cursor: 'not-allowed',
-              backgroundColor: hasSelection ? '#e8f5e8' : '#f8f9fa',
-              border: hasSelection ? '3px solid #6bcf7f' : '3px solid #e0e0e0',
-              fontSize: '16px',
-              textAlign: 'center',
-              fontWeight: hasSelection ? 'bold' : 'normal',
-              color: hasSelection ? '#2d3436' : '#636e72'
-            }}
-          />
+      <CardContent className="space-y-3 sm:space-y-4">
+        {/* 搜尋輸入區域 */}
+        <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 max-w-2xl mx-auto">
+          {/* 輸入框 */}
+          <div className="w-full sm:flex-1">
+            <Input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
+              readOnly
+              disabled={disabled}
+              className={`text-center font-bold text-sm sm:text-base cursor-not-allowed ${
+                hasSelection
+                  ? "bg-green-50 border-children-success border-3 text-children-text-primary"
+                  : "bg-gray-50"
+              }`}
+            />
+          </div>
+
+          {/* 搜尋按鈕 */}
+          <Button
+            onClick={onSearch}
+            disabled={disabled || !hasSelection}
+            variant={hasSelection ? "success" : "default"}
+            size="lg"
+            className={`w-full sm:w-auto min-w-[140px] text-sm sm:text-base transition-transform ${
+              hasSelection ? "scale-105" : "scale-100"
+            }`}
+          >
+            {hasSelection ? (
+              <>
+                <Rocket className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                🚀 開始創作
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />✨ 先選擇風格
+              </>
+            )}
+          </Button>
         </div>
 
-        {/* 搜尋按鈕 */}
-        <button
-          onClick={onSearch}
-          disabled={disabled || !hasSelection}
-          className={`children-btn children-btn-large ${hasSelection ? 'children-btn-success' : 'children-btn-primary'}`}
-          style={{
-            minWidth: '140px',
-            fontSize: '18px',
-            fontWeight: 'bold',
-            opacity: (!hasSelection || disabled) ? 0.6 : 1,
-            transform: hasSelection ? 'scale(1.05)' : 'scale(1)',
-            transition: 'all 0.3s ease'
-          }}
-        >
-          {hasSelection ? '🚀 開始創作' : '✨ 先選擇風格'}
-        </button>
-      </div>
+        {/* 選擇狀態顯示 */}
+        {hasSelection && (
+          <div className="flex justify-center animate-pulse-slow">
+            <Badge
+              variant="success"
+              className="text-sm sm:text-base px-4 sm:px-6 py-2"
+            >
+              ✨ 已選擇風格：
+              <span className="ml-2 font-bold">{searchQuery}</span>
+            </Badge>
+          </div>
+        )}
 
-      {/* 選擇狀態顯示 */}
-      {hasSelection && (
-        <div style={{
-          marginTop: '20px',
-          padding: '12px 20px',
-          backgroundColor: '#e8f5e8',
-          borderRadius: 'var(--border-radius-md)',
-          border: '2px solid #6bcf7f',
-          display: 'inline-block'
-        }}>
-          <span style={{
-            color: '#2d3436',
-            fontSize: '16px',
-            fontWeight: 'bold'
-          }}>
-            ✨ 已選擇風格：
-            <span style={{ color: '#6bcf7f', marginLeft: '8px' }}>
-              {searchQuery}
-            </span>
-          </span>
-        </div>
-      )}
-
-      {/* 使用提示 */}
-      {!hasSelection && (
-        <div style={{
-          marginTop: '16px',
-          fontSize: '14px',
-          color: '#4ecdc4',
-          fontStyle: 'italic'
-        }}>
-          💡 提示：點擊下方任一張圖片來選擇你喜歡的風格！
-        </div>
-      )}
-    </div>
+        {/* 使用提示 */}
+        {!hasSelection && (
+          <div className="flex items-center justify-center gap-2 text-children-secondary text-xs sm:text-sm italic">
+            <Lightbulb className="w-4 h-4" />
+            <span>💡 提示：點擊下方任一張圖片來選擇你喜歡的風格！</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
