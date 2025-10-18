@@ -28,7 +28,7 @@ export class UserRoute extends Route {
     // 登入/註冊（不需要認證）
     this.router.post(
       `${this.url}/login`,
-      validateRequest(["userName", "userPassword"]),
+      validateRequest(["userName", "userPassword", "permissions"]),
       this.Controller.Login,
     );
 

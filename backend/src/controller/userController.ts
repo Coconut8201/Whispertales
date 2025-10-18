@@ -7,6 +7,7 @@ import {
   UnauthorizedError,
   BadRequestError,
   ConflictError,
+  InternalError,
 } from "../errors/AppErrors";
 import { userModel } from "../models/userModel";
 
@@ -128,53 +129,60 @@ export class UserController extends Controller {
   }
 
   /**
-   * 註冊新用戶
-   * 使用統一的錯誤處理和響應格式
+   * 用戶註冊
+   * Controller 層方法 - 只處理 HTTP 邏輯
+   * 業務邏輯由 Service 層（DataBase）處理
    */
   public AddUser = asyncHandler(async (req: Request, res: Response) => {
-    const { userName, userPassword } = req.body;
+    const { userName, userPassword, permissions } = req.body;
 
-    // 記錄註冊嘗試（開發環境）
+    // ✅ 1. 記錄註冊嘗試（開發環境）
     if (process.env.NODE_ENV !== "production") {
-      console.log(`[註冊嘗試] 用戶名: ${userName}`);
+      console.log(`[AddUser Controller] 註冊嘗試: ${userName}`);
     }
 
-    // 檢查用戶名是否已存在
-    const isNameTaken = await DataBase.isNameTaken(userName);
-
-    if (isNameTaken) {
-      console.error(`[註冊失敗] 用戶名 "${userName}" 已存在`);
-      throw new ConflictError(`用戶名 "${userName}" 已被使用`, {
-        userName,
-        suggestion: "請選擇其他用戶名",
-      });
-    }
-
-    // 驗證密碼強度（可選）
-    if (userPassword.length < 6) {
-      throw new BadRequestError("密碼長度至少需要 6 個字元", {
-        currentLength: userPassword.length,
-        minLength: 6,
-      });
-    }
-
-    // 創建新用戶
-    const user = new userModel({
+    // ✅ 2. 呼叫 Service 層方法
+    const result = await DataBase.SaveNewUser(
       userName,
       userPassword,
-      booklist: [],
-    });
+      permissions || "user", // 默認為普通用戶
+    );
 
-    await user.save();
+    // ✅ 3. 根據 Service 層結果處理錯誤
+    if (!result.success) {
+      console.error(`[AddUser Controller] 註冊失敗: ${result.message}`);
 
-    console.log(`[註冊成功] 用戶: ${userName}, ID: ${user._id}`);
+      // 根據錯誤代碼拋出對應的錯誤類別
+      switch (result.code) {
+        case 409:
+          // Conflict - 用戶名已存在
+          throw new ConflictError(result.message, {
+            userName,
+            suggestion: "請選擇其他用戶名",
+          });
+        case 400:
+          // Bad Request - 密碼不符合要求
+          throw new BadRequestError(result.message, { userName });
+        default:
+          // 其他錯誤
+          throw new InternalError(result.message);
+      }
+    }
 
-    // 返回成功響應（不返回密碼）
+    // ✅ 4. 記錄成功（開發環境）
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        `[AddUser Controller] 註冊成功: ${userName} (ID: ${result.data?.id})`,
+      );
+    }
+
+    // ✅ 5. 返回統一格式的成功響應
     return res.success(
       {
-        id: user._id.toString(),
-        userName: user.userName,
-        createdAt: user.createdAt,
+        id: result.data?.id,
+        userName: result.data?.userName,
+        permissions: result.data?.permissions,
+        createdAt: result.data?.createdAt,
       },
       "註冊成功",
     );
