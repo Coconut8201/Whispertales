@@ -10,7 +10,7 @@ RUN mkdir -p /docker-entrypoint-initdb.d
 
 # 建立初始化腳本
 RUN echo 'db = db.getSiblingDB("whispertales"); \
-db.createCollection("user"); \
+db.createCollection("users"); \
 db.user.insertOne({ \
   userName: "admin", \
   password: "p@ssw0rd", \

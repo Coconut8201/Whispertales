@@ -202,7 +202,6 @@ export class DataBase {
     };
   }> {
     try {
-      // ✅ 1. 驗證用戶名是否已存在
       if (await DataBase.isNameTaken(name)) {
         console.error(`[SaveNewUser] 用戶名 "${name}" 已存在`);
         return {
@@ -212,7 +211,6 @@ export class DataBase {
         };
       }
 
-      // ✅ 2. 驗證密碼強度
       if (password.length < 6) {
         console.warn(`[SaveNewUser] 密碼過短: ${name}`);
         return {
@@ -222,14 +220,12 @@ export class DataBase {
         };
       }
 
-      // ✅ 3. 驗證權限等級（防止非法權限）
       const validPermissions = ["user", "admin", "moderator"];
       if (!validPermissions.includes(permissions)) {
         console.warn(`[SaveNewUser] 非法權限: ${permissions}`);
         permissions = "user"; // 默認為普通用戶
       }
 
-      // ✅ 4. 創建新用戶物件
       const newUser = new userModel({
         userName: name,
         userPassword: password,
@@ -237,12 +233,10 @@ export class DataBase {
         booklist: [],
       });
 
-      // ✅ 5. 保存到資料庫
       await newUser.save();
 
       console.log(`[SaveNewUser] 成功建立用戶: ${name} (ID: ${newUser._id})`);
 
-      // ✅ 6. 返回成功結果（不包含密碼）
       return {
         success: true,
         message: "用戶建立成功",
