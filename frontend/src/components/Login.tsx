@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { userLogin } from "../utils/tools/fetch";
+import { UserService } from "../services";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import {
@@ -13,11 +13,12 @@ import {
 } from "./ui/card";
 import { Loading } from "./ui/loading";
 import { Badge } from "./ui/badge";
-import { LogIn, UserPlus, Home, Sparkles } from "lucide-react";
+import { UserPlus, Home, Sparkles, Eye, EyeOff } from "lucide-react";
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -27,7 +28,7 @@ const Login: React.FC = () => {
     setError("");
     setIsLoading(true);
 
-    const result = await userLogin(username, password);
+    const result = await UserService.login(username, password);
     if (result.success) {
       console.log(`使用者 ${username} 登入成功`);
       navigate(`/style`);
@@ -55,12 +56,7 @@ const Login: React.FC = () => {
         {/* 登入卡片 */}
         <Card className="shadow-children-medium border-2 border-children-accent/20">
           <CardHeader className="text-center space-y-0.5 sm:space-y-1 pb-2 sm:pb-3 px-3 sm:px-4">
-            <div className="flex justify-center mb-0.5">
-              <Badge variant="accent" className="text-xs px-2 sm:px-3 py-0.5">
-                <LogIn className="w-3 h-3 mr-1" />
-                會員登入
-              </Badge>
-            </div>
+            <div className="flex justify-center mb-0.5"></div>
             <CardTitle className="text-base sm:text-lg md:text-xl !leading-tight">
               🔑 歡迎回來！
             </CardTitle>
@@ -108,16 +104,30 @@ const Login: React.FC = () => {
                 >
                   🔒 密碼
                 </label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="輸入你的密碼..."
-                  required
-                  disabled={isLoading}
-                  className="text-sm h-9 sm:h-10"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="輸入你的密碼..."
+                    required
+                    disabled={isLoading}
+                    className="text-sm h-9 sm:h-10 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-children-text-secondary hover:text-children-text-primary transition-colors"
+                    disabled={isLoading}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* 登入按鈕 */}
