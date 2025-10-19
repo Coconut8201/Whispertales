@@ -1,7 +1,6 @@
 import { Controller } from "../interfaces/Controller";
 import { Request, Response } from "express";
 import { UserService } from "../database";
-import { DataBase } from "../utils/DataBase";
 import jwt from "jsonwebtoken";
 import { asyncHandler } from "../middleware/errorMiddleware";
 import {
@@ -11,6 +10,7 @@ import {
   InternalError,
   NotFoundError,
 } from "../errors/AppErrors";
+import { getCurrentUserId, getCurrentUser } from "../utils/authHelpers";
 
 export class UserController extends Controller {
   public test(Request: Request, Response: Response) {
@@ -240,15 +240,8 @@ export class UserController extends Controller {
    * 業務邏輯由 Service 層（UserService）處理
    */
   public GetUserProfile = asyncHandler(async (req: Request, res: Response) => {
-    // 從認證中介軟體獲取用戶 ID
-    const userId = (req as any).user?.id;
-
-    if (!userId) {
-      throw new BadRequestError("缺少必要的用戶ID", {
-        field: "userId",
-        suggestion: "請確保已登入並且認證令牌有效",
-      });
-    }
+    // 使用工具函數獲取用戶 ID（自動驗證並拋出錯誤）
+    const userId = getCurrentUserId(req);
 
     if (process.env.NODE_ENV !== "production") {
       console.log(`[GetUserProfile Controller] 獲取請求: 用戶ID ${userId}`);
@@ -284,68 +277,59 @@ export class UserController extends Controller {
    * Controller 層方法 - 只處理 HTTP 邏輯
    * 業務邏輯由 Service 層（UserService）處理
    */
-  public UpdateUserProfile = asyncHandler(async (req: Request, res: Response) => {
-    // 從認證中介軟體獲取用戶 ID
-    const userId = (req as any).user?.id;
-    const updateData = req.body;
+  public UpdateUserProfile = asyncHandler(
+    async (req: Request, res: Response) => {
+      // 使用工具函數獲取用戶 ID（自動驗證並拋出錯誤）
+      const userId = getCurrentUserId(req);
+      const updateData = req.body;
 
-    // 驗證必填參數
-    if (!userId) {
-      throw new UnauthorizedError("用戶未認證", {
-        field: "userId",
-        suggestion: "請先登入",
-      });
-    }
+      // 驗證更新數據
+      if (!updateData || Object.keys(updateData).length === 0) {
+        throw new BadRequestError("更新數據不能為空", {
+          field: "updateData",
+          suggestion: "請提供要更新的欄位",
+        });
+      }
 
-    // 驗證更新數據
-    if (!updateData || Object.keys(updateData).length === 0) {
-      throw new BadRequestError("更新數據不能為空", {
-        field: "updateData",
-        suggestion: "請提供要更新的欄位",
-      });
-    }
+      // 驗證更新數據的欄位是否有效
+      if (!this.validateProfileData(updateData)) {
+        throw new BadRequestError("包含無效的更新欄位", {
+          field: "updateData",
+          allowedFields: ["nickname", "email", "phone", "avatar"],
+          suggestion: "只能更新: nickname, email, phone, avatar",
+        });
+      }
 
-    // 驗證更新數據的欄位是否有效
-    if (!this.validateProfileData(updateData)) {
-      throw new BadRequestError("包含無效的更新欄位", {
-        field: "updateData",
-        allowedFields: ["nickname", "email", "phone", "avatar"],
-        suggestion: "只能更新: nickname, email, phone, avatar",
-      });
-    }
+      if (process.env.NODE_ENV !== "production") {
+        console.log(
+          `[UpdateProfile Controller] 更新請求: 用戶${userId}, 欄位${Object.keys(
+            updateData,
+          ).join(", ")}`,
+        );
+      }
 
-    if (process.env.NODE_ENV !== "production") {
-      console.log(
-        `[UpdateProfile Controller] 更新請求: 用戶${userId}, 欄位${Object.keys(
-          updateData,
-        ).join(", ")}`,
-      );
-    }
+      const result = await UserService.updateUserProfile(userId, updateData);
 
-    const result = await UserService.updateUserProfile(userId, updateData);
+      if (!result.success) {
+        console.error(`[UpdateProfile Controller] 更新失敗: ${result.message}`);
 
-    if (!result.success) {
-      console.error(`[UpdateProfile Controller] 更新失敗: ${result.message}`);
+        throw new InternalError("更新用戶資料時發生錯誤", {
+          userId,
+          suggestion: result.message || "請稍後再試",
+        });
+      }
 
-      throw new InternalError("更新用戶資料時發生錯誤", {
-        userId,
-        suggestion: result.message || "請稍後再試",
-      });
-    }
+      if (process.env.NODE_ENV !== "production") {
+        console.log(
+          `[UpdateProfile Controller] 更新成功: 用戶${userId}, 更新欄位${Object.keys(
+            updateData,
+          ).join(", ")}`,
+        );
+      }
 
-    if (process.env.NODE_ENV !== "production") {
-      console.log(
-        `[UpdateProfile Controller] 更新成功: 用戶${userId}, 更新欄位${Object.keys(
-          updateData,
-        ).join(", ")}`,
-      );
-    }
-
-    return res.success(
-      result.data,
-      "用戶資料更新成功",
-    );
-  });
+      return res.success(result.data, "用戶資料更新成功");
+    },
+  );
 
   /**
    * 驗證用戶資料的欄位（私有方法）
@@ -402,17 +386,9 @@ export class UserController extends Controller {
    * 檢查當前用戶是否擁有指定的故事
    */
   public VerifyOwnership = asyncHandler(async (req: Request, res: Response) => {
-    // 從認證中介軟體獲取用戶 ID
-    const userId = (req as any).user?.id;
+    // 使用工具函數獲取用戶 ID（自動驗證並拋出錯誤）
+    const userId = getCurrentUserId(req);
     const storyId = req.query.storyId as string;
-
-    // 驗證必填參數
-    if (!userId) {
-      throw new UnauthorizedError("用戶未認證", {
-        field: "userId",
-        suggestion: "請先登入",
-      });
-    }
 
     if (!storyId) {
       throw new BadRequestError("缺少必要的故事ID", {
