@@ -10,7 +10,7 @@ import {
   InternalError,
   NotFoundError,
 } from "../errors/AppErrors";
-import { getCurrentUserId, getCurrentUser } from "../utils/authHelpers";
+import { getCurrentUserId, getCurrentUsername } from "../utils/authHelpers";
 
 export class UserController extends Controller {
   public test(Request: Request, Response: Response) {
@@ -103,11 +103,11 @@ export class UserController extends Controller {
    */
   public Logout = asyncHandler(async (req: Request, res: Response) => {
     // 從認證中介軟體獲取用戶資訊（如果有的話）
-    const user = (req as any).user;
-    const userName = user?.username || req.body.userName;
+    const userId = getCurrentUserId(req);
+    const userName = getCurrentUsername(req);
 
     if (process.env.NODE_ENV !== "production") {
-      console.log(`[登出請求] 用戶: ${userName || "未知用戶"}`);
+      console.log(`[登出請求] 用戶ID: ${userId || "未知用戶"}`);
     }
 
     // 清除 cookie 的配置
@@ -128,7 +128,7 @@ export class UserController extends Controller {
     }
 
     return res.success(
-      userName ? { username: userName } : undefined,
+      userId ? { id: userId, username: userName } : undefined,
       "登出成功",
     );
   });

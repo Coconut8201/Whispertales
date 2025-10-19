@@ -1,6 +1,5 @@
 import { UserController } from "../controller/userController";
 import { Route } from "../interfaces/Route";
-import { authMiddleware } from "../utils/multer";
 import { authenticateToken } from "../middleware/autherMiddleware";
 import {
   validateRequest,
@@ -32,6 +31,7 @@ export class UserRoute extends Route {
       this.Controller.Login,
     );
 
+    // 新增（不需要認證）
     this.router.post(
       `${this.url}/adduser`,
       validateRequest(["userName", "userPassword"]),
@@ -48,7 +48,7 @@ export class UserRoute extends Route {
     // 用戶管理（需要認證）
     this.router.delete(
       `${this.url}/deluser`,
-      authMiddleware,
+      authenticateToken,
       validateRequest(["username"]),
       this.Controller.DeleteUser,
     );
