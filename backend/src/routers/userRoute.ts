@@ -39,7 +39,11 @@ export class UserRoute extends Route {
     );
 
     // 登出（需要認證）
-    this.router.get(`${this.url}/logout`, this.Controller.Logout);
+    this.router.get(
+      `${this.url}/logout`,
+      authenticateToken,
+      this.Controller.Logout,
+    );
 
     // 用戶管理（需要認證）
     this.router.delete(
@@ -50,7 +54,11 @@ export class UserRoute extends Route {
     );
 
     // 用戶資料（需要認證）
-    this.router.get("/profile", authenticateToken, userController.GetUserProfile);
+    this.router.get(
+      "/profile",
+      authenticateToken,
+      userController.GetUserProfile,
+    );
     this.router.put(
       "/profile",
       authenticateToken,
