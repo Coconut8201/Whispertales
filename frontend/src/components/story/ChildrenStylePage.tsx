@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { sdmodel, sdmodel_list } from "../../utils/sdmodel_list";
+import { picStyleList, PicStyle } from "@/utils/bookStyleList";
 import { userLogout, verifyAuth } from "../../utils/tools/fetch";
 import { Button } from "../ui/button";
 import {
@@ -25,7 +25,7 @@ const ChildrenStylePage: React.FC = () => {
   const [isNavigating, setIsNavigating] = useState(false);
   const navigate = useNavigate();
 
-  const options: sdmodel[] = sdmodel_list;
+  const options: PicStyle[] = picStyleList;
 
   // 檢查登入狀態
   useEffect(() => {

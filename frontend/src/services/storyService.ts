@@ -3,13 +3,13 @@
  * 負責所有與故事生成、獲取、管理相關的 API 請求
  */
 
-import { apis } from '../utils/tools/api';
+import { apis } from "../utils/tools/api";
 import type {
   Story,
   BookManageList,
   StoryOwnershipResponse,
   GenImagePromptResponse,
-} from '../types/story';
+} from "../types/story";
 
 export class StoryService {
   /**
@@ -20,7 +20,7 @@ export class StoryService {
    */
   static async generateStory(
     roleForm: Object,
-    voiceModelName: string
+    voiceModelName: string,
   ): Promise<any> {
     const payload = {
       roleform: roleForm,
@@ -32,10 +32,10 @@ export class StoryService {
       const timeoutId = setTimeout(() => controller.abort(), 600000); // 10分鐘超時
 
       const response = await fetch(apis.LLMGenStory, {
-        method: 'POST',
-        credentials: 'include',
+        method: "POST",
+        credentials: "include",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
         signal: controller.signal,
@@ -47,11 +47,11 @@ export class StoryService {
         const responseData = await response.json();
         return responseData;
       } else {
-        console.error('提交失敗:', response.statusText);
+        console.error("提交失敗:", response.statusText);
         return null;
       }
     } catch (error) {
-      console.error('提交時出錯:', error);
+      console.error("提交時出錯:", error);
       return null;
     }
   }
@@ -64,10 +64,10 @@ export class StoryService {
   static async startStory(storyId: string): Promise<Story | null> {
     try {
       const response = await fetch(apis.startStory, {
-        method: 'POST',
-        credentials: 'include',
+        method: "POST",
+        credentials: "include",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ storyId }),
       });
@@ -79,7 +79,7 @@ export class StoryService {
       const storyData: Story = await response.json();
       return storyData;
     } catch (error) {
-      console.error('StartStory, Failed to fetch story:', error);
+      console.error("StartStory, Failed to fetch story:", error);
       throw error;
     }
   }
@@ -91,10 +91,10 @@ export class StoryService {
   static async getBookList(): Promise<BookManageList | null> {
     try {
       const response = await fetch(apis.GetStoryList, {
-        method: 'GET',
-        credentials: 'include',
+        method: "GET",
+        credentials: "include",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
@@ -110,7 +110,7 @@ export class StoryService {
 
       return responseData.data;
     } catch (error) {
-      console.error('getBookList fail:', error);
+      console.error("getBookList fail:", error);
       return null;
     }
   }
@@ -121,18 +121,18 @@ export class StoryService {
    * @returns 驗證結果
    */
   static async verifyOwnership(
-    storyId: string
+    storyId: string,
   ): Promise<StoryOwnershipResponse> {
     try {
       const response = await fetch(
         `${apis.verifyStoryOwnership}?storyId=${storyId}`,
         {
-          method: 'GET',
-          credentials: 'include',
+          method: "GET",
+          credentials: "include",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       const responseData: { success: boolean; message: string } =
@@ -144,7 +144,7 @@ export class StoryService {
 
       return { success: true };
     } catch (error) {
-      console.error('verifyStoryOwnership fail:', error);
+      console.error("verifyStoryOwnership fail:", error);
       return { success: false };
     }
   }
@@ -159,14 +159,14 @@ export class StoryService {
   static async generateImagePrompt(
     storyArray: string[],
     storyId: string,
-    roleform: any
+    roleform: any,
   ): Promise<GenImagePromptResponse> {
     try {
       const response = await fetch(apis.GenImagePrompt, {
-        method: 'POST',
-        credentials: 'include',
+        method: "POST",
+        credentials: "include",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           storyArray,
@@ -187,29 +187,14 @@ export class StoryService {
 
       return { success: true, message: responseData.message };
     } catch (error) {
-      console.error('genImagePrompt fail:', error);
+      console.error("genImagePrompt fail:", error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : '生成圖片提示詞失敗',
+        message: error instanceof Error ? error.message : "生成圖片提示詞失敗",
       };
     }
   }
 
-  /**
-   * 獲取所有 Stable Diffusion 模型
-   * @returns 模型列表
-   */
-  static async getAllSDModels(): Promise<any> {
-    try {
-      const response = await fetch(apis.getAllSDModel);
-      if (!response.ok) {
-        throw new Error(`GetALLSDModel error! status: ${response.status}`);
-      }
-      const modelList = await response.json();
-      return modelList;
-    } catch (error) {
-      console.error('getAllSDModels fail:', error);
-      return null;
-    }
-  }
+  // 註：getAllSDModels 方法已移除，因為不再使用 Stable Diffusion 模型
+  // 圖片風格現在使用本地定義的 picStyleList
 }

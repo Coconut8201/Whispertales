@@ -1,0 +1,6 @@
+卡通風格 (Cartoon Style)
+油畫風格 (Oil Painting Style)
+像素藝術風格 (Pixel Art Style)
+寫實風格 (Realistic Style)
+低多邊形風格 (Low Poly Style)
+剪貼畫/拼貼風格 (Collage Style)

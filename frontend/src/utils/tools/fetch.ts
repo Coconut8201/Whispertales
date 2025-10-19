@@ -1,7 +1,13 @@
 // import { storyInterface } from "../../components/StartStory";
-import { bookManageList } from "../sdmodel_list";
 import { apis } from "./api"; // 假設這是你的 API 配置文件的路徑
 import { ResponseHandler } from "../responseHandler";
+
+// bookManageList 類型定義
+interface bookManageList {
+  bookId: string;
+  bookName: string;
+  bookFirstImageBase64?: string;
+}
 
 // storyInterface 類型定義
 interface storyInterface {
