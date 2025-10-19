@@ -1,5 +1,10 @@
 // 故事播放相關的工具函數
-import { StartStory_api, GetVoice, makeZhuyin, verifyStoryOwnership } from './tools/fetch';
+import {
+  StartStory_api,
+  GetVoice,
+  makeZhuyin,
+  verifyStoryOwnership,
+} from "./tools/fetch";
 
 export interface StoryData {
   storyTale: string;
@@ -35,7 +40,7 @@ export class StoryDataManager {
       if (!ownership.success) {
         return {
           success: false,
-          message: '無權限訪問此故事'
+          message: "無權限訪問此故事",
         };
       }
 
@@ -44,19 +49,19 @@ export class StoryDataManager {
       if (result.success) {
         return {
           success: true,
-          data: result.data
+          data: result.data,
         };
       } else {
         return {
           success: false,
-          message: result.message || '載入故事失敗'
+          message: result.message || "載入故事失敗",
         };
       }
     } catch (error) {
-      console.error('載入故事錯誤:', error);
+      console.error("載入故事錯誤:", error);
       return {
         success: false,
-        message: '載入故事時發生錯誤'
+        message: "載入故事時發生錯誤",
       };
     }
   }
@@ -66,19 +71,19 @@ export class StoryDataManager {
    */
   static processStoryText(storyTale: string): string[] {
     if (!storyTale) return [];
-    
+
     // 按換行符分割故事
-    const lines = storyTale.split('\n').filter(line => line.trim() !== '');
-    
+    const lines = storyTale.split("\n").filter((line) => line.trim() !== "");
+
     // 每頁顯示適當數量的文字
     const linesPerPage = 3;
     const pages: string[] = [];
-    
+
     for (let i = 0; i < lines.length; i += linesPerPage) {
-      const pageText = lines.slice(i, i + linesPerPage).join('\n');
+      const pageText = lines.slice(i, i + linesPerPage).join("\n");
       pages.push(pageText);
     }
-    
+
     return pages;
   }
 
@@ -88,9 +93,17 @@ export class StoryDataManager {
   static async addZhuyin(text: string): Promise<string> {
     try {
       const result = await makeZhuyin(text);
-      return result.success ? result.data : text;
+      // makeZhuyin 返回 string[][] | { error: boolean; message: string }
+      if (Array.isArray(result)) {
+        // 如果是 string[][]，轉換為文本
+        return result.map((line) => line.join("")).join("\n");
+      } else {
+        // 如果是錯誤對象，返回原文本
+        console.error("添加注音失敗:", result.message);
+        return text;
+      }
     } catch (error) {
-      console.error('添加注音失敗:', error);
+      console.error("添加注音失敗:", error);
       return text;
     }
   }
@@ -116,7 +129,7 @@ export class AudioPlayerManager {
   async initializeAudio(storyLines: string[], storyId: string): Promise<void> {
     try {
       this.audioUrls = [];
-      
+
       for (let i = 0; i < storyLines.length; i++) {
         const line = storyLines[i];
         if (line.trim()) {
@@ -125,16 +138,16 @@ export class AudioPlayerManager {
             const audioUrl = URL.createObjectURL(audioBlob);
             this.audioUrls.push(audioUrl);
           } else {
-            this.audioUrls.push(''); // 空音頻URL
+            this.audioUrls.push(""); // 空音頻URL
           }
         } else {
-          this.audioUrls.push(''); // 空音頻URL
+          this.audioUrls.push(""); // 空音頻URL
         }
       }
-      
+
       this.notifyStateChange();
     } catch (error) {
-      console.error('初始化音頻失敗:', error);
+      console.error("初始化音頻失敗:", error);
     }
   }
 
@@ -143,33 +156,33 @@ export class AudioPlayerManager {
    */
   playPage(pageIndex: number): void {
     if (pageIndex < 0 || pageIndex >= this.audioUrls.length) return;
-    
+
     this.stopCurrent();
-    
+
     const audioUrl = this.audioUrls[pageIndex];
     if (!audioUrl) return;
-    
+
     this.currentAudio = new Audio(audioUrl);
     this.currentPage = pageIndex;
     this.isPlaying = true;
-    
-    this.currentAudio.addEventListener('ended', () => {
+
+    this.currentAudio.addEventListener("ended", () => {
       this.isPlaying = false;
       this.notifyStateChange();
     });
-    
-    this.currentAudio.addEventListener('error', (e) => {
-      console.error('音頻播放錯誤:', e);
+
+    this.currentAudio.addEventListener("error", (e) => {
+      console.error("音頻播放錯誤:", e);
       this.isPlaying = false;
       this.notifyStateChange();
     });
-    
-    this.currentAudio.play().catch(error => {
-      console.error('播放音頻失敗:', error);
+
+    this.currentAudio.play().catch((error) => {
+      console.error("播放音頻失敗:", error);
       this.isPlaying = false;
       this.notifyStateChange();
     });
-    
+
     this.notifyStateChange();
   }
 
@@ -201,31 +214,31 @@ export class AudioPlayerManager {
       this.notifyStateChange();
       return;
     }
-    
+
     const audioUrl = this.audioUrls[startIndex];
     if (!audioUrl) {
       this.playSequential(startIndex + 1);
       return;
     }
-    
+
     this.stopCurrent();
     this.currentAudio = new Audio(audioUrl);
     this.currentPage = startIndex;
     this.isPlaying = true;
-    
-    this.currentAudio.addEventListener('ended', () => {
+
+    this.currentAudio.addEventListener("ended", () => {
       this.playSequential(startIndex + 1);
     });
-    
-    this.currentAudio.addEventListener('error', () => {
+
+    this.currentAudio.addEventListener("error", () => {
       this.playSequential(startIndex + 1);
     });
-    
-    this.currentAudio.play().catch(error => {
-      console.error('播放音頻失敗:', error);
+
+    this.currentAudio.play().catch((error) => {
+      console.error("播放音頻失敗:", error);
       this.playSequential(startIndex + 1);
     });
-    
+
     this.notifyStateChange();
   }
 
@@ -237,7 +250,7 @@ export class AudioPlayerManager {
       isPlaying: this.isPlaying,
       currentPage: this.currentPage,
       audioUrls: this.audioUrls,
-      currentAudio: this.currentAudio
+      currentAudio: this.currentAudio,
     };
   }
 
@@ -262,6 +275,8 @@ export class AudioPlayerManager {
 /**
  * 創建音頻播放器的工廠函數
  */
-export const createAudioPlayer = (onStateChange?: (state: AudioState) => void): AudioPlayerManager => {
+export const createAudioPlayer = (
+  onStateChange?: (state: AudioState) => void,
+): AudioPlayerManager => {
   return new AudioPlayerManager(onStateChange);
 };
