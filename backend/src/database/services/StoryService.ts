@@ -1,5 +1,5 @@
 import { storyModel } from "../../models/storyModel";
-import { CurrentTime } from "../../utils/tools/tool";
+import { currentTimestamp } from "../../utils/tools/tool";
 import { OperationResult } from "../types/responses";
 
 /**
@@ -22,7 +22,7 @@ export class StoryService {
         storyTale: storyTale,
         storyInfo: storyInfo,
         is_favorite: false,
-        addDate: CurrentTime(),
+        addDate: currentTimestamp(),
       });
 
       await newStory.save();

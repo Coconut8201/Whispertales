@@ -1,45 +1,44 @@
 import { StoryController } from "../controller/storyController";
 import { Route } from "../interfaces/Route";
-import { authenticateToken } from '../middleware/autherMiddleware';
+import { authenticateToken } from "../middleware/autherMiddleware";
+import { validateRequest } from "../middleware/responseMiddleware";
 
+export class StoryRoute extends Route {
+  protected url: string = "";
+  protected Controller = new StoryController();
+  constructor() {
+    super();
+    this.url = "/story";
+    this.setRoutes();
+  }
 
-export class StoryRoute extends Route{
-   protected url: string = '';
-   protected Controller = new StoryController;
-   constructor(){
-      super()
-      this.url = '/story';
-      this.setRoutes();
-   }
+  // http://localhost:7943/story
+  protected setRoutes(): void {
+    this.router.get(`${this.url}`, this.Controller.test);
 
-   // http://localhost:7943/story
-   protected setRoutes(): void {
-      this.router.get(`${this.url}`, this.Controller.test);
-      this.router.get(`${this.url}/ta`, this.Controller.testOpenaiApi);
-      this.router.post(`${this.url}/startstory`, this.Controller.StartStory);
-      this.router.get(`${this.url}/getstorylist_fdb`, authenticateToken,this.Controller.GetStorylistFDB);
-      this.router.post(`${this.url}/llm/genstory`, authenticateToken, (req, res, next) => {
-         req.setTimeout(600000);
-         res.setTimeout(600000);
-         next();
-     },this.Controller.LLMGenStory);
-      this.router.post(`${this.url}/llm/genimageprompt`, authenticateToken, this.Controller.GenImagePrompt);
+    // 測試Gemini API
+    this.router.get(
+      `${this.url}/test_gemini_api`,
+      authenticateToken,
+      this.Controller.testGeminiApi,
+    );
 
-      this.router.post(`${this.url}/makezhuyin`, this.Controller.makezhuyin);
-      this.router.post(`${this.url}/image/sdoption`, this.Controller.sdOption);
-      this.router.get(`${this.url}/images/sdmodellist`, this.Controller.GetSDModelList);
-      this.router.post(`${this.url}/image/re_gen_image`, this.Controller.ReGenImage);
-      // http://localhost:7943/story/startstory
-      // http://localhost:7943/story/getstorylist_fdb
-      // http://localhost:7943/story/llm/genstory
-      // http://localhost:7943/story/llm/genimageprompt
-      // http://localhost:7943/story/image/sdoption
-      // http://localhost:7943/story/images/sdmodellist
-      // http://localhost:7943/story/image/re_gen_image
+    // 生成一繪本（包含圖片和文字）
+    this.router.post(
+      `${this.url}/genstory`,
+      authenticateToken,
+      validateRequest(["roleform", "voiceModelName"]),
+      this.Controller.GenStory,
+    );
 
-      // http://localhost:7943/story/voice/savevoice
-      // http://localhost:7943/story/voice/take_voice
+    this.router.post(`${this.url}/startstory`, this.Controller.StartStory);
+    this.router.get(
+      `${this.url}/getstorylist_fdb`,
+      authenticateToken,
+      this.Controller.GetStorylistFDB,
+    );
 
-      // https://163.13.202.128/api/story/getstorylist_fdb
-   }
+    // this.router.post(`${this.url}/makezhuyin`, this.Controller.makezhuyin);
+
+  }
 }

@@ -61,7 +61,7 @@ docker-compose ps
 │   Nginx     │◄───┤   Frontend  │    │   Backend   │
 │  (Port 80)  │    │  (Port 3000)│◄───┤ (Port 7943) │
 └─────────────┘    └─────────────┘    └─────────────┘
-                                              │
+                                             │
                         ┌─────────────┐      │
                         │   MongoDB   │◄─────┘
                         │ (Port 27017)│

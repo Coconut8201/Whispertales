@@ -13,8 +13,8 @@ import {
 import { getCurrentUserId, getCurrentUsername } from "../utils/authHelpers";
 
 export class UserController extends Controller {
-  public test(Request: Request, Response: Response) {
-    Response.send(`This is userController`);
+  public test(req: Request, res: Response) {
+    return res.success('This is userController')
   }
 
   /**

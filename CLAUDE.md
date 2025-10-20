@@ -147,6 +147,8 @@ Whispertales/
 
 ## Important Notes
 
+- **語言**: 回覆以及程式碼備註盡量使用繁體中文
+- **程式碼兼容性**: 除非有顯性要求，否則不要寫兼容程式碼（如舊版瀏覽器支援、polyfills 等）
 - **Middleware Order**: CORS and cookie-parser must come before route handlers in backend
 - **Authentication**: Always use `authenticateToken` from `middleware/autherMiddleware.ts` (not the old `authMiddleware` from utils)
 - **Database Connection**: Singleton pattern ensures only one MongoDB connection across the application

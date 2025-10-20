@@ -1,30 +1,39 @@
 import { Controller } from "../interfaces/Controller";
 import { Request, Response } from "express";
-import { DataBase } from "../utils/DataBase";
-import { sdModelOption, getSDModelList } from "../utils/tools/LLM_fetch_images";
 import { storyInterface } from "../interfaces/storyInterface";
-import { fetchImage } from "../utils/tools/fetch";
-import { RoleFormInterface } from "../interfaces/RoleFormInterface";
-import {
-  isObjectValid,
-  generateStory,
-  GenImagePrompt,
-} from "../utils/tools/tool";
+import { DataBase } from "../utils/DataBase";
+import { GeminiAI } from "../utils/tools/geminiAI";
 import PQueue from "p-queue";
-import fs from "fs";
-import path from "path";
-import { openAIFetch } from "../utils/tools/openai_fetch";
 import { getCurrentUserId } from "../utils/authHelpers";
+import { asyncHandler } from "../middleware/errorMiddleware";
+import { RoleForm, StoryRequestBody } from "../types/story";
 
 export class StoryController extends Controller {
   queue = new PQueue({ concurrency: 1 }); // 限制為1個並發請求
 
-  public test(Request: Request, Response: Response) {
-    Response.send(`this is STORY get, use post in this url is FINE !`);
+  // 創建共用的 Gemini 實例 - 支援圖片和文字生成
+  private gemini = new GeminiAI(process.env.GEMINI_API_KEY!, {
+    model: "gemini-2.5-flash-image",
+    temperature: 0.9,
+    responseModalities: ["TEXT", "IMAGE"], // 同時生成文字和圖片
+    aspectRatio: "16:9", // 圖片比例
+    maxOutputTokens: 4096,
+  });
+
+  public test(req: Request, res: Response) {
+    return res.success("This is storyController");
   }
-  public async testOpenaiApi(Request: Request, Response: Response) {
-    await openAIFetch("who are you?");
-  }
+
+  /**
+   * 測試基本的Gemini API 連線是否正確
+   * Controller 層方法 - 只處理 HTTP 邏輯
+   */
+  public testGeminiApi = asyncHandler(async (req: Request, res: Response) => {
+    // 直接使用共用實例
+    const result = await this.gemini.generateText("Hello, world!");
+    res.send(result);
+  });
+
   // 拿單一本書的資訊並回傳
   public async StartStory(Request: Request, Response: Response) {
     const { storyId } = Request.body;
@@ -59,136 +68,115 @@ export class StoryController extends Controller {
   }
 
   /**
-   * 生成故事
-   * @param Request storyInfo 你的故事是甚麼內容
-   * @example http://localhost:7943/story/llm/genstory post
+   * 使用 Gemini AI 生成繪本（包含故事文字和圖片）
+   * @param Request roleform 故事角色設定, voiceModelName 語音模型名稱
+   * @example POST http://localhost:7943/story/genstory
    * {
-   *   "roleform":{"style":"帥貓咪","mainCharacter":"","description":"","otherCharacters":[]},
-   *   "voiceModelName":"bbbbb3"
+   *   "roleform": {
+   *     "style": "童話風格",
+   *     "mainCharacter": "小兔子",
+   *     "description": "一隻勇敢的小兔子",
+   *     "otherCharacters": ["小狗", "小貓"]
+   *   },
+   *   "voiceModelName": "default_voice"
    * }
    */
-  public LLMGenStory = async (Request: Request, Response: Response) => {
-    Request.setTimeout(600000);
-    Response.setTimeout(600000);
-    if (!isObjectValid(Request.body)) {
-      return Response.send({
-        code: 403,
-        message: "請求中的某個屬性是 null、undefined 或空陣列",
-        success: false,
-      });
-    }
-
-    // 使用工具函數獲取用戶 ID（自動驗證並拋出錯誤）
-    const userId = getCurrentUserId(Request);
-    let storyRoleForm: RoleFormInterface = Request.body.roleform;
-    let voiceModelName: string = Request.body.voiceModelName;
-    let bookType: string = Request.body.bookType;
-
-    console.log(`Request.body = ${JSON.stringify(Request.body)}`); // 傳入的角色設定
-    const MODEL_NAME = storyRoleForm.style;
-    await sdModelOption(MODEL_NAME);
+  public GenStory = asyncHandler(async (req: Request, res: Response) => {
+    const { roleform, voiceModelName } = req.body as StoryRequestBody;
+    const userId = getCurrentUserId(req);
 
     try {
-      const result: string = await this.queue.add(() =>
-        generateStory(storyRoleForm, voiceModelName, bookType, userId),
-      );
-      let return_playload = {
-        success: true,
-        storyId: result,
+      // 構建故事生成提示詞
+      const prompt = this.buildStoryPrompt(roleform);
+
+      // 使用 Gemini 生成故事和圖片
+      const content = await this.gemini.generateContent(prompt);
+
+      if (!content.text) {
+        return res.error("故事生成失敗：未收到文字內容", 500);
+      }
+
+      // 處理生成的圖片
+      const imageUrls: string[] = [];
+      if (content.images && content.images.length > 0) {
+        // TODO: 儲存圖片到檔案系統或雲端儲存
+        // 暫時回傳 base64 資料
+        imageUrls.push(
+          ...content.images.map(
+            (img) => `data:${img.mimeType};base64,${img.data}`,
+          ),
+        );
+      }
+
+      // 儲存到資料庫
+      const storyData = {
+        userId,
+        title: this.extractTitleFromStory(content.text),
+        content: content.text,
+        images: imageUrls,
+        roleform,
+        voiceModelName,
+        createdAt: new Date(),
       };
-      return Response.status(200).send(return_playload);
-    } catch (error: any) {
-      console.error(`Error in generateStory: ${error.message}`);
-      return Response.status(500).send({
-        success: false,
-        message: "generateStory Error: " + error.message,
-      });
-    }
-  };
 
-  public async sdOption(Request: Request, Response: Response) {
-    let MODEL_NAME: string =
-      Request.body.modelname || "fantasyWorld_v10.safetensors";
-    Response.send(await sdModelOption(MODEL_NAME));
-  }
+      // TODO: 使用 DataBase.createStory 儲存故事
+      // const savedStory = await DataBase.createStory(storyData);
 
-  public async GetSDModelList(Request: Request, Response: Response) {
-    Response.send(await getSDModelList());
-  }
-
-  public ReGenImage = async (Request: Request, Response: Response) => {
-    let { prompt } = Request.body;
-    let payload: Object = {
-      prompt: prompt,
-      seed: -1,
-      cfg_scale: 7,
-      steps: 20,
-      enable_hr: false,
-      denoising_strength: 0.75,
-      restore_faces: false,
-    };
-
-    try {
-      let images = await fetchImage(payload);
-      Response.json({ images });
-    } catch (error) {
-      Response.status(500).send({ error: "Failed to generate image" });
-    }
-  };
-
-  public async makezhuyin(Request: Request, Response: Response) {
-    let { text } = Request.body;
-
-    try {
-      let result = await fetch(`${process.env.makeZhuyinAPI!}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      return res.success(
+        {
+          story: content.text,
+          images: imageUrls,
+          metadata: {
+            roleform,
+            voiceModelName,
+          },
         },
-        body: JSON.stringify({ text: text }),
-      });
-
-      const data = await result.json();
-      Response.json(data);
+        "繪本生成成功",
+      );
     } catch (error) {
-      console.error("Error in makezhuyin:", error);
-      Response.status(500).json({ error: "轉換注音失敗" });
+      console.error("GenStory 錯誤:", error);
+      return res.error("繪本生成失敗", 500, { error: String(error) });
     }
+  });
+
+  /**
+   * 構建故事生成提示詞
+   */
+  private buildStoryPrompt(roleform: RoleForm): string {
+    const { style, mainCharacter, description, otherCharacters } = roleform;
+
+    return `
+請創作一個兒童繪本故事，並生成一張精美的插圖。
+
+故事設定：
+- 風格：${style || "童話風格"}
+- 主角：${mainCharacter || "小動物"}
+- 主角描述：${description || "善良可愛"}
+- 其他角色：${otherCharacters?.join("、") || "無"}
+
+故事要求：
+1. 適合 5-10 歲兒童閱讀
+2. 長度約 300-500 字
+3. 包含生動的對話和動作描寫
+4. 傳達正面的價值觀（如友誼、勇氣、善良等）
+5. 結局溫馨圓滿
+
+插圖要求：
+1. 展示故事中最精彩或最溫馨的場景
+2. 色彩繽紛、風格可愛
+3. 適合兒童繪本的風格
+
+請開始創作：
+    `.trim();
   }
 
   /**
-   * 生成圖片提示詞
-   * @param Request 包含 storyArray, storyId, roleform 的請求
-   * @example http://localhost:7943/story/llm/genimageprompt post
-   * {
-   *   "storyArray": ["故事內容1", "故事內容2"],
-   *   "storyId": "story_id",
-   *   "roleform": {"style":"帥貓咪","mainCharacter":"","description":"","otherCharacters":[]}
-   * }
+   * 從故事文字中提取標題（取前 20 個字或第一行）
    */
-  public GenImagePrompt = async (Request: Request, Response: Response) => {
-    try {
-      const { storyArray, storyId, roleform } = Request.body;
-
-      if (!storyArray || !storyId || !roleform) {
-        return Response.status(400).json({
-          success: false,
-          message: "缺少必要參數：storyArray, storyId, roleform",
-        });
-      }
-
-      await GenImagePrompt(storyArray, storyId, roleform);
-
-      return Response.status(200).json({
-        success: true,
-        message: "圖片提示詞生成成功",
-      });
-    } catch (error: any) {
-      console.error("Error in GenImagePrompt:", error);
-      return Response.status(500).json({
-        success: false,
-        message: "GenImagePrompt Error: " + error.message,
-      });
-    }
-  };
+  private extractTitleFromStory(story: string): string {
+    const firstLine = story.split("\n")[0];
+    return firstLine.length > 20
+      ? firstLine.substring(0, 20) + "..."
+      : firstLine;
+  }
 }
