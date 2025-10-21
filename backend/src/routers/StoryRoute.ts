@@ -27,7 +27,8 @@ export class StoryRoute extends Route {
     this.router.post(
       `${this.url}/genstory`,
       authenticateToken,
-      validateRequest(["roleform", "voiceModelName"]),
+      // TODO voice 修改完後這邊要改回來
+      validateRequest(["roleform"]), // voiceModelName 改為可選
       this.Controller.GenStory,
     );
 
@@ -39,6 +40,5 @@ export class StoryRoute extends Route {
     );
 
     // this.router.post(`${this.url}/makezhuyin`, this.Controller.makezhuyin);
-
   }
 }

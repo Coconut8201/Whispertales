@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { asyncHandler } from "../middleware/errorMiddleware";
 import { userModel } from "../models/userModel";
 import { storyModel } from "../models/storyModel";
+import { GridFSStorageService } from "../services/GridFSStorageService";
 
 /**
  * 調試控制器
@@ -172,11 +173,11 @@ export class DebugController {
           collections: {
             users: {
               count: userCount,
-              model: 'userModel',
+              model: "userModel",
             },
             stories: {
               count: storyCount,
-              model: 'storyModel',
+              model: "storyModel",
             },
           },
         },
@@ -188,46 +189,156 @@ export class DebugController {
   });
 
   /**
-   * 創建測試用戶
-   * POST /debug/create-test-user
-   * Body: { userName, userPassword }
+   * 獲取 GridFS 統計信息
+   * GET /debug/gridfs-stats
    */
-  public createTestUser = asyncHandler(async (req: Request, res: Response) => {
+  public gridfsStats = asyncHandler(async (req: Request, res: Response) => {
     if (process.env.NODE_ENV === "production") {
       return res.error("此功能僅在開發環境中可用", 403);
     }
 
-    const { userName, userPassword } = req.body;
+    try {
+      const stats = await GridFSStorageService.getStorageStats();
 
-    if (!userName || !userPassword) {
-      return res.error("請提供 userName 和 userPassword", 400);
-    }
-
-    // 檢查用戶是否已存在
-    const existingUser = await userModel.findOne({ userName });
-    if (existingUser) {
-      return res.error(`用戶 "${userName}" 已存在`, 409, {
-        userId: existingUser._id.toString(),
-        suggestion: "請使用不同的用戶名，或使用 /debug/check-user 查看現有用戶",
+      return res.success(
+        {
+          totalImages: stats.totalImages,
+          totalSize: stats.totalSize,
+          totalSizeFormatted: `${(stats.totalSize / 1024 / 1024).toFixed(2)} MB`,
+          bucketName: stats.bucketName,
+          averageSize:
+            stats.totalImages > 0
+              ? `${(stats.totalSize / stats.totalImages / 1024).toFixed(2)} KB`
+              : "N/A",
+        },
+        "GridFS 統計信息",
+      );
+    } catch (error: any) {
+      return res.error(`獲取 GridFS 統計失敗: ${error.message}`, 500, {
+        error: error.message,
       });
     }
+  });
 
-    // 創建新用戶
-    const newUser = new userModel({
-      userName,
-      userPassword,
-      booklist: [],
-    });
+  /**
+   * 測試 GridFS 文本儲存功能
+   * POST /debug/save-txt
+   * Body: { text?: string, filename?: string }
+   *
+   * 使用原生 GridFSBucket 直接儲存文本文件
+   * 這個方法展示如何使用 Stream 方式寫入 GridFS
+   */
+  public saveTxt = asyncHandler(async (req: Request, res: Response) => {
+    if (process.env.NODE_ENV === "production") {
+      return res.error("此功能僅在開發環境中可用", 403);
+    }
 
-    await newUser.save();
+    console.log("\n========== GridFS 文本儲存測試開始 ==========");
+    const startTime = Date.now();
 
-    return res.success(
-      {
-        userId: newUser._id.toString(),
-        userName: newUser.userName,
-        created: true,
-      },
-      `測試用戶 "${userName}" 創建成功`,
-    );
+    try {
+      // 引入 Readable stream
+      const { Readable } = await import("stream");
+
+      // 從 request body 獲取文本內容和檔名，或使用預設值
+      const fileData = "這是一個測試文本檔案\n用於驗證 GridFS 設定是否正常\n當前時間: " +
+          new Date().toISOString();
+      const filename = `test-${Date.now()}.txt`;
+
+      console.log(`[測試] 準備儲存文本: ${fileData.substring(0, 50)}...`);
+      console.log(`[測試] 檔名: ${filename}`);
+      console.log(`[測試] 文件大小: ${fileData.length} bytes`);
+
+      // 將文本轉換為 Buffer
+      const fileBuffer = Buffer.from(fileData, "utf-8");
+
+      // 獲取 GridFS bucket（使用現有的 GridFSStorageService）
+      const bucket = GridFSStorageService.getBucket();
+
+      if (!bucket) {
+        throw new Error("GridFS bucket 未初始化");
+      }
+
+      // 創建上傳 stream
+      const uploadStream = bucket.openUploadStream(filename);
+
+      console.log(`[測試] 開始寫入 GridFS...`);
+
+      // 將 Buffer 轉換為 Readable stream
+      const readable = new Readable();
+      readable.push(fileBuffer);
+      readable.push(null); // 表示 stream 結束
+
+      // 使用 pipe 將數據寫入 GridFS（使用 any 來避免類型問題）
+      readable.pipe(uploadStream as any);
+
+      uploadStream.on("close", (file: any) => {
+        console.log(filename + " Write to DB");
+      });
+
+      let gridFsResponse = {
+        id: uploadStream.id,
+        filename: uploadStream.filename,
+      };
+
+      console.log(JSON.stringify(gridFsResponse, null, 2));
+
+      return res.success(gridFsResponse, "文本儲存成功");
+    } catch (error: any) {
+      const failTime = Date.now() - startTime;
+      console.error(`[測試] ❌ 測試失敗:`, error);
+      console.log(`[測試] 失敗耗時: ${failTime}ms`);
+      console.log("========== GridFS 文本儲存測試失敗 ==========\n");
+
+      return res.error(`GridFS 文本儲存失敗: ${error.message}`, 500, {
+        error: error.message,
+        failTime: `${failTime}ms`,
+        stack: error.stack,
+      });
+    }
+  });
+
+  /**
+   * 列出所有 GridFS 文件
+   * GET /debug/gridfs-list
+   */
+  public gridFSList = asyncHandler(async (req: Request, res: Response) => {
+    if (process.env.NODE_ENV === "production") {
+      return res.error("此功能僅在開發環境中可用", 403);
+    }
+
+    try {
+      const bucket = GridFSStorageService.getBucket();
+
+      if (!bucket) {
+        throw new Error("GridFS bucket 未初始化");
+      }
+
+      const files: any[] = [];
+      const cursor = bucket.find({});
+
+      for await (const file of cursor) {
+        files.push({
+          id: file._id.toString(),
+          filename: file.filename,
+          length: file.length,
+          uploadDate: file.uploadDate,
+          contentType: file.contentType,
+          metadata: file.metadata,
+        });
+      }
+
+      return res.success(
+        {
+          totalFiles: files.length,
+          files: files,
+        },
+        `找到 ${files.length} 個 GridFS 文件`,
+      );
+    } catch (error: any) {
+      return res.error(`列出 GridFS 文件失敗: ${error.message}`, 500, {
+        error: error.message,
+      });
+    }
   });
 }

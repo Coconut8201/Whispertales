@@ -32,11 +32,7 @@ export const authenticateToken = async (
     // console.log('====================');
 
     if (!token || token === "undefined") {
-      return res.status(401).json({
-        success: false,
-        message: "請重新登入",
-        needRelogin: true,
-      });
+      return res.error("請重新登入", 401, { needRelogin: true });
     }
 
     try {
@@ -47,17 +43,10 @@ export const authenticateToken = async (
       next();
     } catch (error) {
       res.clearCookie("authToken");
-      return res.status(401).json({
-        success: false,
-        message: "登入已過期，請重新登入",
-        needRelogin: true,
-      });
+      return res.error("登入已過期，請重新登入", 401, { needRelogin: true });
     }
   } catch (error) {
     console.error("Token 驗證錯誤:", error);
-    return res.status(403).json({
-      success: false,
-      message: "無效的認證令牌",
-    });
+    return res.error("無效的認證令牌", 403);
   }
 };

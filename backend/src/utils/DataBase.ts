@@ -74,6 +74,13 @@ export class DataBase {
     return await StoryService.updateImageBase64(_id, imageBase64);
   }
 
+  static async Update_StoryImageFileIds(
+    _id: string,
+    imageFileIds: string[],
+  ): Promise<object | any> {
+    return await StoryService.updateImageFileIds(_id, imageFileIds);
+  }
+
   // ==================== User 相關方法 ====================
 
   static async isNameTaken(name: string): Promise<boolean> {

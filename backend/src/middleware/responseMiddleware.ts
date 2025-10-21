@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
-import { ResponseHandler } from '../utils/responseHandler';
-import { ApiResponse } from '../types/response';
+import { Request, Response, NextFunction } from "express";
+import { ResponseHandler } from "../utils/responseHandler";
+import { ApiResponse } from "../types/response";
 
 /**
  * 擴展 Express Response 物件，添加統一的響應方法
@@ -9,13 +9,17 @@ declare global {
   namespace Express {
     interface Response {
       success<T = any>(data?: T, message?: string): Response;
-      error(message: string, code?: number, details?: Record<string, any>): Response;
+      error(
+        message: string,
+        code?: number,
+        details?: Record<string, any>,
+      ): Response;
       paginated<T = any>(
         data: T[],
         page: number,
         limit: number,
         total: number,
-        message?: string
+        message?: string,
       ): Response;
     }
   }
@@ -39,7 +43,7 @@ declare global {
 export const responseMiddleware = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
   /**
    * 成功響應
@@ -48,7 +52,7 @@ export const responseMiddleware = (
    */
   res.success = function <T = any>(
     data?: T,
-    message: string = 'Success'
+    message: string = "Success",
   ): Response {
     const response = ResponseHandler.success(data, message);
     return this.status(200).json(response);
@@ -63,7 +67,7 @@ export const responseMiddleware = (
   res.error = function (
     message: string,
     code: number = 500,
-    details?: Record<string, any>
+    details?: Record<string, any>,
   ): Response {
     const response: ApiResponse = {
       code,
@@ -87,7 +91,7 @@ export const responseMiddleware = (
     page: number,
     limit: number,
     total: number,
-    message: string = 'Success'
+    message: string = "Success",
   ): Response {
     const totalPages = Math.ceil(total / limit);
     const hasNextPage = page < totalPages;
@@ -123,7 +127,7 @@ export const responseMiddleware = (
 export const requestLogger = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
   const start = Date.now();
 
@@ -131,10 +135,10 @@ export const requestLogger = (
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
 
   // 監聽響應完成
-  res.on('finish', () => {
+  res.on("finish", () => {
     const duration = Date.now() - start;
     console.log(
-      `[${new Date().toISOString()}] ${req.method} ${req.path} - ${res.statusCode} (${duration}ms)`
+      `[${new Date().toISOString()}] ${req.method} ${req.path} - ${res.statusCode} (${duration}ms)`,
     );
   });
 
@@ -197,11 +201,7 @@ export const validateQuery = (requiredParams: string[]) => {
     }
 
     if (missingParams.length > 0) {
-      res.error(
-        '缺少必填查詢參數',
-        400,
-        { missingParams }
-      );
+      res.error("缺少必填查詢參數", 400, { missingParams });
       return;
     }
 
