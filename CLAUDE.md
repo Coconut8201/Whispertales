@@ -11,7 +11,27 @@ Whispertales is a full-stack AI-powered storytelling platform that combines stor
 ```
 Whispertales/
 ├── backend/          # Node.js/Express API server
+│   ├── src/
+│   │   ├── app.ts              # Application entry point
+│   │   ├── Routers.ts          # Centralized route registration
+│   │   ├── database.ts         # Database module exports (ConnectionManager, services)
+│   │   ├── controller/         # Request handlers
+│   │   ├── routers/            # Route definitions (StoryRoute, UserRoute, etc.)
+│   │   ├── models/             # Mongoose schemas
+│   │   ├── middleware/         # Express middleware
+│   │   ├── services/           # Business logic (GridFSStorageService)
+│   │   ├── database/services/  # Data access layer (StoryService, UserService)
+│   │   ├── types/              # TypeScript type definitions
+│   │   └── utils/              # Helper utilities and AI integrations
+│   └── build/        # Compiled JavaScript output
 └── frontend/         # React/Vite web application
+    ├── src/
+    │   ├── App.tsx             # Route configuration
+    │   ├── components/         # Page components and UI library
+    │   ├── view/               # Static pages
+    │   ├── services/           # API client services
+    │   └── utils/              # Helper utilities
+    └── dist/         # Production build output
 ```
 
 ## Backend Development
@@ -50,10 +70,18 @@ Whispertales/
 - Type-safe user injection via `req.user` (see `types/express.d.ts`)
 - Supports dual token sources: cookies and Authorization header
 
-**Database**:
-- MongoDB via Mongoose
-- Singleton connection manager in `utils/DataBase.ts` (renamed to `database.ts`)
-- Models: `userModel.ts`, `storyModel.ts`
+**Database Architecture**:
+- MongoDB via Mongoose with singleton connection pattern
+- **Connection Management**: `ConnectionManager` in `database.ts` (exported from `database/index.ts`)
+- **Legacy Wrapper**: `utils/DataBase.ts` provides backward compatibility but delegates to new modular services
+- **Data Access Layer**: Service classes in `database/services/`
+  - `StoryService`: Story CRUD operations
+  - `UserService`: User management and authentication
+- **Models**: `models/userModel.ts`, `models/storyModel.ts`
+- **File Storage**: GridFS for images via `services/GridFSStorageService.ts`
+  - Stores base64 images as text in GridFS (no binary conversion)
+  - Must call `GridFSStorageService.initializeBucket()` after database connection
+  - Bucket name: "images"
 
 **AI/ML Integrations** (in `utils/tools/`):
 - LLM: Ollama, OpenAI API
@@ -79,18 +107,21 @@ Whispertales/
 
 ### Frontend Architecture
 
-**Framework**: React 18 with TypeScript, Vite build tool
+**Framework**: React 18 with TypeScript, Vite build tool (port 3151)
 
 **Routing** (defined in `src/App.tsx`):
-- `/login` - User login
-- `/login/register` - User registration
+- `/login` - User login (Login component)
+- `/login/register` - User registration (Register component)
 - `/style` - Story style selection (Creating component)
 - `/style/role` - Character creation (Advanced component)
-- `/style/role/startStory` - Story generation initiation
-- `/voice` - Voice management
-- `/bookmanage` - Book library management
-- `/mybook` - Book reader
+- `/style/role/startStory` - Story generation initiation (StartStory component)
+- `/voice` - Voice management (Voice component)
+- `/bookmanage` - Book library management (BookManage component)
+- `/mybook` - Book reader (MyBook component)
 - `/PdfTest` - PDF generation testing
+- `/instruction`, `/user_setting`, `/faq`, `/about_us` - Static view pages
+- `/test` - Test component
+- `/ui-demo` - Children's UI component showcase (ChildrenUIDemo)
 
 **Component Organization**:
 - `components/` - Main page components (Login, Register, Creating, etc.)
@@ -145,6 +176,37 @@ Whispertales/
 - Frontend connects to backend API (configure in Vite proxy or environment variables)
 - Both projects use `pnpm` for package management
 
+## Critical Architecture Patterns
+
+### Backend Initialization Sequence
+The application **must** initialize in this exact order (see `app.ts:initializeApp()`):
+1. Database connection (`ConnectionManager.getInstance().connect()`)
+2. GridFS initialization (`GridFSStorageService.initializeBucket()`)
+3. Express server startup
+
+Failure to follow this sequence will cause GridFS operations to fail.
+
+### Route Class Pattern
+All routes follow a class-based pattern implementing `RouteHandler` interface:
+- Must have `getRouter()` method returning Express Router
+- Registered centrally in `Routers.ts`
+- Example: `StoryRoute`, `UserRoute`, `VoiceRoute`, `ImageRoute`, `DebugRoute`
+
+### Service Layer Architecture
+The codebase uses a **three-tier data access pattern**:
+1. **Controllers** (`controller/*.ts`) - Handle HTTP requests/responses
+2. **Service Layer** (`database/services/*.ts`) - Business logic and data validation
+3. **Models** (`models/*.ts`) - Mongoose schemas and database structure
+
+**Important**: New database operations should use service classes (`StoryService`, `UserService`), not the legacy `DataBase` class.
+
+### Image Storage Strategy
+Images are stored as **base64 text** in GridFS (not binary):
+- Uses `GridFSStorageService.saveImageFromBase64()` to store
+- Uses `GridFSStorageService.getImageBase64()` to retrieve
+- Frontend receives base64 strings directly (ready for `<img src="data:image/...">`)
+- Each image has metadata: `storyId`, `index`, `contentType`, `isBase64Text: true`
+
 ## Important Notes
 
 - **語言**: 回覆以及程式碼備註盡量使用繁體中文
@@ -155,3 +217,4 @@ Whispertales/
 - **Debug Routes**: Automatically excluded in production builds based on `NODE_ENV`
 - **Port Conflicts**: Use `noportdev` script if port 7943 is already in use
 - **File Uploads**: Audio/image files processed through Multer middleware with appropriate size limits
+- **TypeScript Compilation**: Backend uses CommonJS modules, Frontend uses ESNext modules
