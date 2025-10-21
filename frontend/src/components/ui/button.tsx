@@ -21,6 +21,8 @@ const buttonVariants = cva(
         outline:
           "border-2 sm:border-3 border-children-primary bg-transparent text-children-primary hover:bg-children-bg-primary",
         ghost: "hover:bg-children-bg-primary text-children-text-primary",
+        destructive:
+          "bg-gradient-to-br from-red-500 to-red-600 text-white shadow-children-soft hover:shadow-children-medium hover:-translate-y-0.5",
       },
       size: {
         default: "h-10 sm:h-12 px-4 sm:px-6 md:px-8 py-2 sm:py-3",
