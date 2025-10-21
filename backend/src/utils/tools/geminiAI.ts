@@ -37,7 +37,7 @@ export class GeminiAI {
     this.config = config;
     const modelName = config?.model || this.defaultModel;
 
-    // 構建 generationConfig（不包含 imageGenerationConfig，因為 API 不支援）
+    // 構建 generationConfig
     const generationConfig: any = {
       temperature: config?.temperature ?? 0.9,
       topK: config?.topK ?? 1,
@@ -50,8 +50,17 @@ export class GeminiAI {
       generationConfig.responseModalities = config.responseModalities;
     }
 
-    // 注意：aspectRatio 參數目前不被 API 支援，暫時移除
-    // 圖片會使用預設尺寸生成
+    // 添加 imageConfig（圖片生成配置）
+    if (config?.aspectRatio) {
+      generationConfig.imageConfig = {
+        aspectRatio: config.aspectRatio,
+      };
+    }
+
+    console.log("[GeminiAI] 初始化配置:", {
+      model: modelName,
+      config: generationConfig,
+    });
 
     // 初始化模型
     this.model = this.genAI.getGenerativeModel({
@@ -82,16 +91,51 @@ export class GeminiAI {
    */
   async generateContent(prompt: string): Promise<GeneratedContent> {
     try {
+      console.log("[GeminiAI] 開始生成內容，提示詞長度:", prompt.length);
+
       const result = await this.model.generateContent(prompt);
       const response = result.response;
+
+      console.log(
+        "[GeminiAI] 收到回應，candidates 數量:",
+        response.candidates?.length,
+      );
+
+      // 🔍 詳細檢查回應結構
+      if (response.candidates && response.candidates.length > 0) {
+        console.log(
+          "[GeminiAI] 第一個 candidate 的 parts 數量:",
+          response.candidates[0].content.parts.length,
+        );
+
+        // 打印每個 part 的類型
+        response.candidates[0].content.parts.forEach((part, idx) => {
+          const partKeys = Object.keys(part);
+          console.log(`[GeminiAI] Part ${idx} 包含的鍵:`, partKeys);
+
+          if ("text" in part) {
+            console.log(
+              `[GeminiAI] Part ${idx} 是文字，長度:`,
+              part.text?.length,
+            );
+          }
+          if ("inlineData" in part) {
+            console.log(
+              `[GeminiAI] Part ${idx} 是 inlineData，mimeType:`,
+              part.inlineData?.mimeType,
+            );
+          }
+        });
+      }
 
       const content: GeneratedContent = {};
 
       // 提取文字部分
       try {
         content.text = response.text();
+        console.log("[GeminiAI] 文字內容長度:", content.text.length);
       } catch (e) {
-        // 如果沒有文字部分，忽略錯誤
+        console.log("[GeminiAI] 無文字內容");
       }
 
       // 提取圖片部分
@@ -103,16 +147,30 @@ export class GeminiAI {
               mimeType: part.inlineData.mimeType || "image/png",
               data: part.inlineData.data,
             });
+            console.log(
+              "[GeminiAI] 找到圖片，mimeType:",
+              part.inlineData.mimeType,
+              "，data 長度:",
+              part.inlineData.data.length,
+            );
           }
         }
       }
 
       if (images.length > 0) {
         content.images = images;
+        console.log("[GeminiAI] ✅ 總共生成", images.length, "張圖片");
+      } else {
+        console.log("[GeminiAI] ⚠️ 沒有生成圖片");
+        console.log(
+          "[GeminiAI] 完整 response 結構:",
+          JSON.stringify(response, null, 2),
+        );
       }
 
       return content;
     } catch (error) {
+      console.error("[GeminiAI] 生成內容失敗:", error);
       throw new Error(`Gemini AI 生成內容失敗: ${error}`);
     }
   }
