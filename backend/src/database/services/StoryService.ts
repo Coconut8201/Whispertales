@@ -28,9 +28,7 @@ export class StoryService {
       await newStory.save();
       const newStoryId = newStory._id.toString();
 
-      console.log(
-        `[StoryService.createStory] 成功建立故事，ID: ${newStoryId}`,
-      );
+      console.log(`[StoryService.createStory] 成功建立故事，ID: ${newStoryId}`);
       return newStoryId;
     } catch (e) {
       console.error(`[StoryService.createStory] 建立故事失敗: ${e}`);
@@ -63,10 +61,7 @@ export class StoryService {
    * @param _id 故事ID
    * @param imagePrompt 圖片提示詞
    */
-  static async addImagePrompt(
-    _id: string,
-    imagePrompt: string,
-  ): Promise<void> {
+  static async addImagePrompt(_id: string, imagePrompt: string): Promise<void> {
     try {
       await storyModel.findOneAndUpdate(
         { _id },
@@ -77,7 +72,9 @@ export class StoryService {
         `[StoryService.addImagePrompt] 成功在故事 ${_id} 中新增 image_prompt`,
       );
     } catch (e) {
-      console.error(`[StoryService.addImagePrompt] 新增 image_prompt 失敗: ${e}`);
+      console.error(
+        `[StoryService.addImagePrompt] 新增 image_prompt 失敗: ${e}`,
+      );
     }
   }
 
@@ -109,6 +106,7 @@ export class StoryService {
    * 更新故事的圖片Base64陣列
    * @param _id 故事ID
    * @param imageBase64 圖片Base64陣列
+   * @deprecated 建議使用 GridFS，使用 updateImageFileIds 方法
    */
   static async updateImageBase64(
     _id: string,
@@ -125,6 +123,30 @@ export class StoryService {
     } catch (e) {
       console.error(
         `[StoryService.updateImageBase64] 更新 image_base64 失敗: ${e}`,
+      );
+    }
+  }
+
+  /**
+   * 更新故事的 GridFS 圖片文件 IDs
+   * @param _id 故事ID
+   * @param imageFileIds GridFS file IDs 陣列
+   */
+  static async updateImageFileIds(
+    _id: string,
+    imageFileIds: string[],
+  ): Promise<void> {
+    try {
+      await storyModel.findOneAndUpdate(
+        { _id },
+        { $set: { image_file_ids: imageFileIds } },
+      );
+      console.log(
+        `[StoryService.updateImageFileIds] 成功更新故事 ${_id} 的 image_file_ids 陣列 (${imageFileIds.length} 個文件)`,
+      );
+    } catch (e) {
+      console.error(
+        `[StoryService.updateImageFileIds] 更新 image_file_ids 失敗: ${e}`,
       );
     }
   }

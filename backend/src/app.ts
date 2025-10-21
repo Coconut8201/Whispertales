@@ -1,5 +1,6 @@
 import express from "express";
 import { ConnectionManager } from "./database";
+import { GridFSStorageService } from "./services/GridFSStorageService";
 import cors from "cors";
 import { router } from "./Routers";
 import dotenv from "dotenv";
@@ -14,17 +15,31 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 7943;
 
-// 初始化資料庫連線（單例模式，全局只連線一次）
-const connectionManager = ConnectionManager.getInstance();
-connectionManager
-  .connect(process.env.MONGO_DB_Connect!)
-  .then(() => {
+/**
+ * 初始化應用程式
+ * 確保資料庫和 GridFS 完全初始化後才啟動伺服器
+ */
+async function initializeApp() {
+  try {
+    // 1. 初始化資料庫連線（單例模式，全局只連線一次）
+    const connectionManager = ConnectionManager.getInstance();
+    await connectionManager.connect(process.env.MONGO_DB_Connect!);
     console.log("[App] 資料庫連線成功");
-  })
-  .catch((error) => {
-    console.error("[App] 資料庫連線失敗:", error);
-    process.exit(1); // 連線失敗則終止應用
-  });
+
+    // 2. 初始化 GridFS（必須在資料庫連線成功後）
+    GridFSStorageService.initializeBucket();
+    console.log("[App] GridFS 初始化成功");
+
+    // 3. 啟動 Express 伺服器
+    app.listen(port, () => {
+      console.log("[App] 伺服器啟動成功");
+      console.log(`Server: http://localhost:${port}/user`);
+    });
+  } catch (error) {
+    console.error("[App] 初始化失敗:", error);
+    process.exit(1); // 初始化失敗則終止應用
+  }
+}
 
 //系統伺服器
 const corsOptions = {
@@ -73,7 +88,5 @@ app.use(notFoundHandler); // 404 處理
 app.use(errorHandler); // 全域錯誤處理
 
 //=============================================
-//dev 開發
-app.listen(port, () => {
-  console.log(`Server: http://localhost:${port}/user`);
-});
+// 啟動應用程式（異步初始化）
+initializeApp();
