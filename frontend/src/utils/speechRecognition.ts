@@ -22,29 +22,32 @@ export interface SpeechRecognitionCallbacks {
 export class SpeechRecognitionService {
   private recognition: any = null;
   private isRecording: boolean = false;
-  private lastResult: string = '';
+  private lastResult: string = "";
   private callbacks: SpeechRecognitionCallbacks = {};
 
   constructor(
     config: SpeechRecognitionConfig = {},
-    callbacks: SpeechRecognitionCallbacks = {}
+    callbacks: SpeechRecognitionCallbacks = {},
   ) {
     this.callbacks = callbacks;
     this.initializeRecognition(config);
   }
 
   private initializeRecognition(config: SpeechRecognitionConfig) {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
     if (!SpeechRecognition) {
-      console.error('您的瀏覽器不支援語音識別功能');
+      console.error("您的瀏覽器不支援語音識別功能");
       return;
     }
 
     this.recognition = new SpeechRecognition();
-    this.recognition.lang = config.lang || 'zh-TW';
-    this.recognition.continuous = config.continuous !== undefined ? config.continuous : true;
-    this.recognition.interimResults = config.interimResults !== undefined ? config.interimResults : true;
+    this.recognition.lang = config.lang || "zh-TW";
+    this.recognition.continuous =
+      config.continuous !== undefined ? config.continuous : true;
+    this.recognition.interimResults =
+      config.interimResults !== undefined ? config.interimResults : true;
 
     this.setupEventHandlers();
   }
@@ -53,46 +56,84 @@ export class SpeechRecognitionService {
     if (!this.recognition) return;
 
     this.recognition.onresult = (event: any) => {
-      let finalTranscript = '';
-      
+      let finalTranscript = "";
+
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
-          const transcript = event.results[i][0].transcript;
-          
+          const transcript = event.results[i][0].transcript.trim();
+
           // 避免重複添加相同的結果
-          if (transcript !== this.lastResult) {
+          if (transcript && transcript !== this.lastResult) {
             finalTranscript += transcript;
             this.lastResult = transcript;
           }
         }
       }
-      
+
       if (finalTranscript && this.callbacks.onResult) {
+        console.log("[SpeechRecognition] 識別結果:", finalTranscript);
         this.callbacks.onResult(finalTranscript);
       }
     };
 
     this.recognition.onerror = (event: any) => {
-      console.error('語音識別錯誤:', event.error);
-      this.isRecording = false;
-      
+      console.error("[SpeechRecognition] 錯誤:", event.error);
+
+      // 某些錯誤不應該停止錄音（如 no-speech）
+      if (event.error === "aborted" || event.error === "not-allowed") {
+        this.isRecording = false;
+      }
+
       if (this.callbacks.onError) {
-        this.callbacks.onError(event.error);
+        let errorMessage = event.error;
+
+        // 提供更友好的錯誤信息
+        switch (event.error) {
+          case "not-allowed":
+            errorMessage = "麥克風權限被拒絕，請在瀏覽器設置中允許麥克風訪問";
+            break;
+          case "no-speech":
+            errorMessage = "未檢測到語音，請重試";
+            break;
+          case "network":
+            errorMessage = "網絡錯誤，請檢查網絡連接";
+            break;
+          case "aborted":
+            errorMessage = "語音識別被中止";
+            break;
+        }
+
+        this.callbacks.onError(errorMessage);
       }
     };
 
     this.recognition.onstart = () => {
+      console.log("[SpeechRecognition] 開始錄音");
       this.isRecording = true;
-      
+
       if (this.callbacks.onStart) {
         this.callbacks.onStart();
       }
     };
 
     this.recognition.onend = () => {
-      // 如果還在錄音狀態，自動重新開始
+      console.log(
+        "[SpeechRecognition] 錄音結束，isRecording:",
+        this.isRecording,
+      );
+
+      // 如果還在錄音狀態，自動重新開始（實現連續錄音）
       if (this.isRecording) {
-        this.recognition.start();
+        try {
+          console.log("[SpeechRecognition] 自動重新啟動");
+          this.recognition.start();
+        } catch (error) {
+          console.error("[SpeechRecognition] 重新啟動失敗:", error);
+          this.isRecording = false;
+          if (this.callbacks.onEnd) {
+            this.callbacks.onEnd();
+          }
+        }
       } else if (this.callbacks.onEnd) {
         this.callbacks.onEnd();
       }
@@ -104,15 +145,32 @@ export class SpeechRecognitionService {
    */
   public startRecording(): boolean {
     if (!this.recognition) {
-      console.error('語音識別功能不可用');
+      console.error("[SpeechRecognition] 語音識別功能不可用");
       return false;
     }
 
+    // 如果已經在錄音，先停止再重新開始
+    if (this.isRecording) {
+      console.warn("[SpeechRecognition] 已在錄音中，先停止再重新開始");
+      this.stopRecording();
+      // 延遲一下再開始
+      setTimeout(() => this.startRecording(), 100);
+      return true;
+    }
+
     try {
+      console.log("[SpeechRecognition] 嘗試開始錄音");
+      this.lastResult = ""; // 重置上次結果
       this.recognition.start();
       return true;
-    } catch (error) {
-      console.error('開始語音識別失敗:', error);
+    } catch (error: any) {
+      // 如果錯誤是因為已經在運行，忽略這個錯誤
+      if (error.message && error.message.includes("already started")) {
+        console.warn("[SpeechRecognition] 語音識別已經在運行");
+        return true;
+      }
+
+      console.error("[SpeechRecognition] 開始語音識別失敗:", error);
       return false;
     }
   }
@@ -121,9 +179,15 @@ export class SpeechRecognitionService {
    * 停止語音識別
    */
   public stopRecording(): void {
-    if (this.recognition) {
-      this.isRecording = false;
-      this.recognition.stop();
+    if (this.recognition && this.isRecording) {
+      console.log("[SpeechRecognition] 停止錄音");
+      this.isRecording = false; // 先設置為 false，避免 onend 中自動重啟
+
+      try {
+        this.recognition.stop();
+      } catch (error) {
+        console.error("[SpeechRecognition] 停止錄音失敗:", error);
+      }
     }
   }
 
@@ -139,7 +203,7 @@ export class SpeechRecognitionService {
    */
   public reset(): void {
     this.stopRecording();
-    this.lastResult = '';
+    this.lastResult = "";
   }
 
   /**
@@ -155,7 +219,7 @@ export class SpeechRecognitionService {
  */
 export const createSpeechRecognition = (
   config: SpeechRecognitionConfig = {},
-  callbacks: SpeechRecognitionCallbacks = {}
+  callbacks: SpeechRecognitionCallbacks = {},
 ): SpeechRecognitionService => {
   return new SpeechRecognitionService(config, callbacks);
 };
@@ -169,25 +233,29 @@ export const useSpeechRecognition = () => {
 
   const startRecording = (
     onResult: (transcript: string) => void,
-    onError?: (error: string) => void
+    onError?: (error: string) => void,
   ) => {
     if (!SpeechRecognitionService.isSupported()) {
-      console.error('您的瀏覽器不支援語音識別');
+      console.error("您的瀏覽器不支援語音識別");
       return false;
     }
 
     recognition = createSpeechRecognition(
       {
-        lang: 'zh-TW',
+        lang: "zh-TW",
         continuous: true,
-        interimResults: true
+        interimResults: true,
       },
       {
         onResult,
         onError,
-        onStart: () => { isRecording = true; },
-        onEnd: () => { isRecording = false; }
-      }
+        onStart: () => {
+          isRecording = true;
+        },
+        onEnd: () => {
+          isRecording = false;
+        },
+      },
     );
 
     return recognition.startRecording();
@@ -206,6 +274,6 @@ export const useSpeechRecognition = () => {
     startRecording,
     stopRecording,
     getRecordingStatus,
-    isSupported: SpeechRecognitionService.isSupported()
+    isSupported: SpeechRecognitionService.isSupported(),
   };
 };

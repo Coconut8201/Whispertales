@@ -42,14 +42,37 @@ export async function GenStory(
 
     if (response.ok) {
       const responseData = await response.json();
-      return responseData;
+
+      // 後端返回格式: { code: 200, message: "...", data: {...} }
+      // 轉換為前端期望的格式: { success: true, storyId: "..." }
+      if (responseData.code === 200) {
+        return {
+          success: true,
+          storyId: responseData.data?.storyId || null,
+          story: responseData.data?.story,
+          images: responseData.data?.images,
+          metadata: responseData.data?.metadata,
+          message: responseData.message,
+        };
+      } else {
+        return {
+          success: false,
+          message: responseData.message || "故事生成失敗",
+        };
+      }
     } else {
       console.error("提交失敗:", response.statusText);
-      return null;
+      return {
+        success: false,
+        message: `HTTP ${response.status}: ${response.statusText}`,
+      };
     }
   } catch (error) {
     console.error("提交時出錯:", error);
-    return 1;
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "未知錯誤",
+    };
   }
 }
 

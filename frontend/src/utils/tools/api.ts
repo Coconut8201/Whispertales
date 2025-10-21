@@ -4,7 +4,7 @@ export const enum apis {
     //dev
     startStory = `http://localhost:7943/story/startstory`,
     GetStoryList = `http://localhost:7943/story/getstorylist_fdb`,
-    LLMGenStory = `http://localhost:7943/story/llm/genstory`,
+    LLMGenStory = `http://localhost:7943/story/genstory`,
     GenImagePrompt = `http://localhost:7943/story/llm/genimageprompt`,
     makeZhuyin = "http://localhost:7943/story/makezhuyin",
     GetVoice = `http://localhost:7943/voiceset/take_voice`,
