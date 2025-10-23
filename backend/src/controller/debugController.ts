@@ -341,4 +341,23 @@ export class DebugController {
       });
     }
   });
+  
+  public getImage = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.body;
+    
+    console.log(`正在獲取圖片 ${id}`);
+    
+    if (process.env.NODE_ENV === "production") {
+      return res.error("此功能僅在開發環境中可用", 403);
+    }
+    
+    const result = await GridFSStorageService.getImageBase64(id);
+    
+    if (!result) {
+      return res.error("找不到圖片", 404);
+    }
+    
+    return res.send(result);
+    
+  });
 }

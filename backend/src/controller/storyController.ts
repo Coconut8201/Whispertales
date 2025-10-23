@@ -1,7 +1,7 @@
 import { Controller } from "../interfaces/Controller";
 import { Request, Response } from "express";
 import { storyInterface } from "../interfaces/storyInterface";
-import { DataBase } from "../utils/DataBase";
+import { UserService } from "../database";
 import { GeminiAI } from "../utils/tools/geminiAI";
 import PQueue from "p-queue";
 import { getCurrentUserId } from "../utils/authHelpers";
@@ -9,6 +9,7 @@ import { asyncHandler } from "../middleware/errorMiddleware";
 import { RoleForm, StoryRequestBody } from "../types/story";
 import { GridFSStorageService } from "../services/GridFSStorageService";
 import { StoryService } from "../database/services/StoryService";
+import { buildStoryPrompt } from "../utils/storyPrompt";
 
 export class StoryController extends Controller {
   queue = new PQueue({ concurrency: 1 }); // 限制為1個並發請求
@@ -33,40 +34,22 @@ export class StoryController extends Controller {
   public testGeminiApi = asyncHandler(async (req: Request, res: Response) => {
     // 直接使用共用實例
     const result = await this.gemini.generateText("Hello, world!");
-    res.send(result);
+    res.success(result, 'This is StoryController');
   });
 
-  // 拿單一本書的資訊並回傳
-  public async StartStory(Request: Request, Response: Response) {
-    const { storyId } = Request.body;
-    const story: storyInterface = await DataBase.getStoryById(storyId);
-    Response.send(story);
-  }
+  /**
+   * 透過storyId取得故事資訊
+   */
+  public GetStoryByStoryId = asyncHandler(async (req: Request, res: Response) => { 
+    // TODO 這邊可以改用param
+    const { storyId } = req.body;
+    const story: storyInterface = await StoryService.getStoryByStoryId(storyId) as storyInterface;
+    res.success(story, '成功透過 storyId 拿取故事');
+  })
 
   //拿資料庫故事
-  public async GetStorylistFDB(Request: Request, Response: Response) {
-    try {
-      // 使用工具函數獲取用戶 ID（自動驗證並拋出錯誤）
-      const userId = getCurrentUserId(Request);
-      const result = await DataBase.getstoryList(userId);
-      if (result.success) {
-        return Response.send({
-          success: true,
-          data: result.value,
-        });
-      } else {
-        return Response.status(403).json({
-          success: false,
-          message: result.message,
-        });
-      }
-    } catch (error) {
-      console.error("GetStorylistFDB fail:", error);
-      return Response.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
-    }
+  public async GetStorylistFDB(req: Request, res: Response) {
+
   }
 
   /**
@@ -94,10 +77,12 @@ export class StoryController extends Controller {
 
     try {
       // 構建故事生成提示詞
-      const prompt = this.buildStoryPrompt(roleform);
+      const prompt = buildStoryPrompt(roleform);
 
       // 如果請求串流模式
       if (stream) {
+        console.log("Stream mode enabled");
+        
         // 設定 SSE headers
         res.setHeader("Content-Type", "text/event-stream");
         res.setHeader("Cache-Control", "no-cache");
@@ -110,50 +95,54 @@ export class StoryController extends Controller {
         );
 
         try {
-          // 使用 Gemini 生成故事（串流模式）
-          const content = await this.gemini.generateContent(prompt);
+          let fullText = "";
+          const imageBase64Array: string[] = [];
 
-          if (!content.text) {
+          for await (const chunk of this.gemini.generateImageWithTextStream(
+            prompt,
+            "1:1",
+          )) {
+            // 處理文字片段
+            if (chunk.text) {
+              fullText += chunk.text;
+              res.write(
+                `data: ${JSON.stringify({
+                  type: "story",
+                  content: chunk.text,
+                })}\n\n`,
+              );
+            }
+
+            // 處理圖片（當 Gemini 完成圖片生成時）
+            if (chunk.image) {
+              const imageWithPrefix = `data:${chunk.image.mimeType};base64,${chunk.image.data}`;
+              imageBase64Array.push(imageWithPrefix);
+
+              // 立即發送圖片給前端（不等待所有圖片生成完）
+              res.write(
+                `data: ${JSON.stringify({
+                  type: "image",
+                  image: imageWithPrefix,
+                  currentCount: imageBase64Array.length,
+                })}\n\n`,
+              );
+            }
+
+            // 完成信號
+            if (chunk.isComplete) {
+              console.log(
+                `[GenStory Stream] 串流完成 - 文字: ${fullText.length} 字，圖片: ${imageBase64Array.length} 張`,
+              );
+            }
+          }
+
+          // 驗證是否有內容
+          if (!fullText) {
             res.write(
               `data: ${JSON.stringify({ type: "error", message: "故事生成失敗：未收到文字內容" })}\n\n`,
             );
             res.end();
             return;
-          }
-
-          // 將故事文字分段傳送
-          const sentences = this.splitStoryIntoSentences(content.text);
-          for (let i = 0; i < sentences.length; i++) {
-            const sentence = sentences[i];
-            res.write(
-              `data: ${JSON.stringify({
-                type: "story",
-                content: sentence,
-                progress: Math.round(((i + 1) / sentences.length) * 100),
-              })}\n\n`,
-            );
-
-            // 模擬漸進式生成效果（可選）
-            await new Promise((resolve) => setTimeout(resolve, 100));
-          }
-
-          // 處理生成的圖片
-          const imageBase64Array: string[] = [];
-          if (content.images && content.images.length > 0) {
-            res.write(
-              `data: ${JSON.stringify({ type: "status", message: "正在處理圖片..." })}\n\n`,
-            );
-
-            imageBase64Array.push(
-              ...content.images.map(
-                (img) => `data:${img.mimeType};base64,${img.data}`,
-              ),
-            );
-
-            // 傳送圖片數據（前端立即顯示）
-            res.write(
-              `data: ${JSON.stringify({ type: "images", images: imageBase64Array })}\n\n`,
-            );
           }
 
           // 儲存到資料庫
@@ -164,13 +153,13 @@ export class StoryController extends Controller {
           const storyInfo = JSON.stringify({
             roleform,
             voiceModelName: voiceModelName || "default",
-            title: this.extractTitleFromStory(content.text),
+            title: this.extractTitleFromStory(fullText),
             createdAt: new Date().toISOString(),
           });
 
           // 1. 創建故事文檔
-          const storyId = await DataBase.SaveNewStory_returnID(
-            content.text,
+          const storyId = await StoryService.createStory(
+            fullText,
             storyInfo,
           );
 
@@ -183,7 +172,7 @@ export class StoryController extends Controller {
           }
 
           // 2. 添加到用戶書單
-          const addResult = await DataBase.saveNewBookId(storyId, userId);
+          const addResult = await UserService.addStoryToUser(storyId, userId);
           if (!addResult || !addResult.success) {
             res.write(
               `data: ${JSON.stringify({ type: "error", message: "無法添加到書單" })}\n\n`,
@@ -192,10 +181,13 @@ export class StoryController extends Controller {
             return;
           }
 
-          // 3. 保存圖片到 GridFS（後台執行，不阻塞前端渲染）
+          // 3. 保存圖片到 GridFS
           if (imageBase64Array.length > 0) {
             res.write(
-              `data: ${JSON.stringify({ type: "status", message: "正在保存圖片..." })}\n\n`,
+              `data: ${JSON.stringify({
+                type: "status",
+                message: `正在保存 ${imageBase64Array.length} 張圖片...`,
+              })}\n\n`,
             );
 
             try {
@@ -207,11 +199,19 @@ export class StoryController extends Controller {
               await StoryService.updateImageFileIds(storyId, fileIds);
 
               res.write(
-                `data: ${JSON.stringify({ type: "status", message: `已保存 ${fileIds.length} 張圖片` })}\n\n`,
+                `data: ${JSON.stringify({
+                  type: "status",
+                  message: `已保存 ${fileIds.length}/${imageBase64Array.length} 張圖片`,
+                })}\n\n`,
               );
             } catch (error) {
               console.error("[GenStory Stream] 保存圖片失敗:", error);
-              // 圖片保存失敗不影響主流程
+              res.write(
+                `data: ${JSON.stringify({
+                  type: "warning",
+                  message: "圖片保存失敗，但故事已保存",
+                })}\n\n`,
+              );
             }
           }
 
@@ -219,11 +219,13 @@ export class StoryController extends Controller {
           res.write(
             `data: ${JSON.stringify({
               type: "complete",
-              message: "繪本生成完成",
-              storyId, // 返回 storyId，前端可以用於導航
+              message: "🎉 繪本生成完成",
+              storyId,
               metadata: {
                 roleform,
                 voiceModelName,
+                textLength: fullText.length,
+                imageCount: imageBase64Array.length,
               },
             })}\n\n`,
           );
@@ -237,14 +239,14 @@ export class StoryController extends Controller {
           res.end();
         }
       } else {
-        // 非串流模式（保留原有邏輯）
-        const content = await this.gemini.generateContent(prompt);
+        // 非串流模式 - 使用同步圖文生成 API
+        const content = await this.gemini.generateImageWithText(prompt, "1:1");
 
         if (!content.text) {
           return res.error("故事生成失敗：未收到文字內容", 500);
         }
 
-        // 處理生成的圖片 - 轉換為 base64
+        // 處理生成的圖片 - 轉換為 base64（帶 data URI 前綴）
         const imageBase64Array: string[] = [];
         if (content.images && content.images.length > 0) {
           imageBase64Array.push(
@@ -252,6 +254,7 @@ export class StoryController extends Controller {
               (img) => `data:${img.mimeType};base64,${img.data}`,
             ),
           );
+          console.log(`[GenStory] 生成了 ${imageBase64Array.length} 張圖片`);
         }
 
         // 儲存到資料庫
@@ -262,19 +265,15 @@ export class StoryController extends Controller {
           createdAt: new Date().toISOString(),
         });
 
-        // 使用 DataBase.SaveNewStory_returnID 儲存故事文本
-        const storyId = await DataBase.SaveNewStory_returnID(
-          content.text,
-          storyInfo,
-        );
+        const storyId = await StoryService.createStory(content.text, storyInfo)
 
         if (!storyId) {
           return res.error("故事保存失敗", 500);
         }
 
-        // ⚠️ 重要：先將故事添加到用戶書單，確保權限驗證
+        // 重要：先將故事添加到用戶書單，確保權限驗證
         // 必須在返回響應前完成，否則用戶無法訪問故事
-        const addResult = await DataBase.saveNewBookId(storyId, userId);
+        const addResult = await UserService.addStoryToUser(storyId, userId);
         if (!addResult || !addResult.success) {
           console.error(
             `[GenStory] 無法將故事 ${storyId} 添加到用戶 ${userId} 的書單`,
@@ -334,53 +333,6 @@ export class StoryController extends Controller {
     // 按照句號、驚嘆號、問號分割，保留標點符號
     const sentences = text.match(/[^。！?]+[。！?]+/g) || [text];
     return sentences.map((s) => s.trim()).filter((s) => s.length > 0);
-  }
-
-  /**
-   * 構建故事生成提示詞
-   * 注意：圖片生成必須使用英文提示詞，中文提示詞不會觸發圖片生成
-   */
-  private buildStoryPrompt(roleform: RoleForm): string {
-    const { style, mainCharacter, description, otherCharacters } = roleform;
-
-    // 故事內容用中文（支援良好）
-    // TODO 沒有用到新的架構，要修改一下
-    const storyPromptChinese = `
-請創作一個兒童繪本故事：
-
-故事設定：
-- 風格：${style || "童話風格"}
-- 主角：${mainCharacter || "小動物"}
-- 主角描述：${description || "善良可愛"}
-- 其他角色：${otherCharacters?.join("、") || "無"}
-
-故事要求：
-1. 適合 5-10 歲兒童閱讀
-2. 長度約 300-500 字
-3. 包含生動的對話和動作描寫
-4. 傳達正面的價值觀（如友誼、勇氣、善良等）
-5. 結局溫馨圓滿
-    `.trim();
-
-    // 圖片生成指令必須用英文（實測中文無法觸發圖片生成）
-    const imagePromptEnglish = `
-
-After writing the story, please create an illustration for this children's book:
-
-Image Requirements:
-- Show the most exciting or heartwarming scene from the story
-- Feature the main character "${mainCharacter}" ${otherCharacters && otherCharacters.length > 0 ? `and other characters: ${otherCharacters.join(", ")}` : ""}
-- Style: ${style} art style
-- Use warm, bright colors to create a fairy-tale atmosphere
-- The scene should be vibrant and lively, suitable for children's books
-- Show interaction and emotion between characters
-- Use soft lighting and delicate brushstrokes to create a magical and cozy feeling
-- Make it engaging and age-appropriate for 5-10 year old children
-
-Please write the complete story first in Chinese, then generate one beautiful illustration.
-    `.trim();
-
-    return storyPromptChinese + "\n" + imagePromptEnglish;
   }
 
   /**

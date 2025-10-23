@@ -201,11 +201,12 @@ The codebase uses a **three-tier data access pattern**:
 **Important**: New database operations should use service classes (`StoryService`, `UserService`), not the legacy `DataBase` class.
 
 ### Image Storage Strategy
-Images are stored as **base64 text** in GridFS (not binary):
-- Uses `GridFSStorageService.saveImageFromBase64()` to store
-- Uses `GridFSStorageService.getImageBase64()` to retrieve
-- Frontend receives base64 strings directly (ready for `<img src="data:image/...">`)
-- Each image has metadata: `storyId`, `index`, `contentType`, `isBase64Text: true`
+Images are stored as **binary data** in GridFS (converted from base64):
+- **存儲流程**: `GridFSStorageService.saveImageFromBase64()` 接收 base64 字串 → 解碼成二進制 Buffer → 存入 GridFS
+  - 節省約 33% 儲存空間（base64 編碼會增加 33% 體積）
+- **讀取流程**: `GridFSStorageService.getImageBase64()` 從 GridFS 讀取二進制數據 → 轉換回 base64 字串
+- Frontend 接收 `data:image/xxx;base64,...` 格式的完整 data URI（可直接用於 `<img src="...">` ）
+- 每張圖片的 metadata 包含: `storyId`, `index`, `contentType`, `originalSize`, `binarySize`, `uploadDate`
 
 ## Important Notes
 

@@ -337,40 +337,6 @@ export class GridFSStorageService {
   }
 
   /**
-   * 獲取圖片串流（舊方法，保留以兼容現有代碼）
-   * ⚠️ 注意：現在返回的是 base64 文字流，不是二進制圖片流
-   * @param fileId - GridFS file ID（字符串或 ObjectId）
-   * @returns 可讀流
-   */
-  static async getImageStream(
-    fileId: string | ObjectId,
-  ): Promise<NodeJS.ReadableStream> {
-    try {
-      const bucket = this.getBucket();
-      const objectId =
-        typeof fileId === "string" ? new ObjectId(fileId) : fileId;
-
-      // 檢查文件是否存在
-      const files = await bucket.find({ _id: objectId }).toArray();
-      if (files.length === 0) {
-        throw new Error(`圖片不存在: ${fileId}`);
-      }
-
-      // 創建下載流
-      const downloadStream = bucket.openDownloadStream(objectId);
-
-      console.log(`[GridFSStorageService] 開始串流圖片: ${fileId}`);
-      return downloadStream;
-    } catch (error) {
-      console.error(
-        `[GridFSStorageService] 獲取圖片串流失敗 (fileId: ${fileId}):`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
    * 獲取圖片 metadata
    * @param fileId - GridFS file ID
    * @returns 文件信息

@@ -32,7 +32,7 @@ export class StoryRoute extends Route {
       this.Controller.GenStory,
     );
 
-    this.router.post(`${this.url}/startstory`, this.Controller.StartStory);
+    this.router.post(`${this.url}/startstory`, this.Controller.GetStoryByStoryId);
     this.router.get(
       `${this.url}/getstorylist_fdb`,
       authenticateToken,

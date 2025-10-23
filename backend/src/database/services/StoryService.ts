@@ -41,7 +41,7 @@ export class StoryService {
    * @param _id 故事ID
    * @returns 故事資料
    */
-  static async getStoryById(_id: string): Promise<object | null> {
+  static async getStoryByStoryId(_id: string): Promise<object | null> {
     try {
       const story = await storyModel.findOne({ _id });
       if (story) {

@@ -6,7 +6,7 @@ export interface GeminiConfig {
   topK?: number;
   topP?: number;
   maxOutputTokens?: number;
-  responseModalities?: ("TEXT" | "IMAGE")[]; // 回應模態：文字、圖片或兩者
+  responseModalities?: ("TEXT" | "IMAGE")[];
   aspectRatio?: "1:1" | "3:4" | "4:3" | "9:16" | "16:9"; // 圖片長寬比
 }
 
@@ -262,6 +262,217 @@ export class GeminiAI {
       return result.totalTokens;
     } catch (error) {
       throw new Error(`計算 token 失敗: ${error}`);
+    }
+  }
+
+  /**
+   * 同時生成圖片和文字
+   * 根據 Google Gemini 官方文檔配置，設定 responseModalities 為 ["TEXT", "IMAGE"]
+   *
+   * 最佳實踐：
+   * - 使用敘事性描述，而不是關鍵字列表
+   * - 提供圖片用途的上下文資訊
+   * - 使用攝影術語（如：鏡頭類型、燈光、景深等）
+   * - 避免負面描述，改用正面描述
+   *
+   * @param prompt 提示詞（同時要求文字描述和圖片生成）
+   * @param aspectRatio 圖片長寬比（預設 1:1，支援 3:4, 4:3, 9:16, 16:9）
+   * @returns 包含文字和圖片的內容物件
+   */
+  async generateImageWithText(
+    prompt: string,
+    aspectRatio: "1:1" | "3:4" | "4:3" | "9:16" | "16:9" = "1:1",
+  ): Promise<GeneratedContent> {
+    try {
+      console.log("[GeminiAI] 🎨 開始同時生成圖片和文字");
+      console.log("[GeminiAI] 提示詞長度:", prompt.length);
+      console.log("[GeminiAI] 圖片長寬比:", aspectRatio);
+
+      const generationConfig: any = {
+        temperature: this.config?.temperature ?? 0.9,
+        topK: this.config?.topK ?? 1,
+        topP: this.config?.topP ?? 1,
+        maxOutputTokens: this.config?.maxOutputTokens ?? 2048,
+        responseModalities: ["TEXT", "IMAGE"],
+        imageConfig: {
+          aspectRatio: aspectRatio,
+        },
+      };
+
+      const multiModalModel = this.genAI.getGenerativeModel({
+        model: this.config?.model || this.defaultModel,
+        generationConfig,
+      });
+
+      const result = await multiModalModel.generateContent(prompt);
+      const response = result.response;
+
+      console.log(
+        "[GeminiAI] 收到回應，candidates 數量:",
+        response.candidates?.length,
+      );
+
+      const content: GeneratedContent = {};
+
+      try {
+        content.text = response.text();
+        console.log("[GeminiAI] 文字長度:", content.text.length);
+      } catch (e) {
+        console.log("[GeminiAI] ⚠️ 無法提取文字內容", e);
+      }
+
+      const images: ImagePart[] = [];
+      for (const candidate of response.candidates || []) {
+        for (const part of candidate.content.parts) {
+          if ("inlineData" in part && part.inlineData) {
+            const image: ImagePart = {
+              mimeType: part.inlineData.mimeType || "image/png",
+              data: part.inlineData.data,
+            };
+            images.push(image);
+            console.log(
+              "[GeminiAI] 找到圖片，類型:",
+              image.mimeType,
+              "，Base64 長度:",
+              image.data.length,
+            );
+          }
+        }
+      }
+
+      if (images.length > 0) {
+        content.images = images;
+        console.log("[GeminiAI] ✅ 成功生成", images.length, "張圖片");
+      } else {
+        console.log("[GeminiAI] ⚠️ 未生成圖片");
+      }
+
+      // ✅ 驗證至少有內容返回
+      if (!content.text && (!content.images || content.images.length === 0)) {
+        console.error(
+          "[GeminiAI] ❌ 完整 response:",
+          JSON.stringify(response, null, 2),
+        );
+        throw new Error("Gemini AI 未返回任何內容（無文字也無圖片）");
+      }
+
+      console.log(
+        "[GeminiAI] 🎉 生成完成 - 文字:",
+        !!content.text,
+        "，圖片:",
+        content.images?.length || 0,
+        "張",
+      );
+
+      return content;
+    } catch (error) {
+      console.error("[GeminiAI] ❌ 同時生成圖片和文字失敗:", error);
+      throw new Error(`Gemini AI 圖文生成失敗: ${error}`);
+    }
+  }
+
+  /**
+   * 🌊 串流同時生成圖片和文字
+   * 文字會逐步串流輸出，圖片會在生成完成時一次性返回
+   *
+   * 📌 使用場景：
+   * - 需要即時顯示文字內容給使用者
+   * - 圖片生成時間較長，希望先看到文字描述
+   *
+   * @param prompt 提示詞（同時要求文字描述和圖片生成）
+   * @param aspectRatio 圖片長寬比（預設 1:1）
+   * @returns 串流區塊（包含逐步文字和最終圖片）
+   *
+   * @example
+   * ```typescript
+   * for await (const chunk of gemini.generateImageWithTextStream(
+   *   "描述一個美麗的日落場景，並生成對應的插圖",
+   *   "16:9"
+   * )) {
+   *   if (chunk.text) {
+   *     console.log("文字片段:", chunk.text);
+   *   }
+   *   if (chunk.image) {
+   *     console.log("收到圖片:", chunk.image.mimeType);
+   *   }
+   *   if (chunk.isComplete) {
+   *     console.log("生成完成！");
+   *   }
+   * }
+   * ```
+   */
+  async *generateImageWithTextStream(
+    prompt: string,
+    aspectRatio: "1:1" | "3:4" | "4:3" | "9:16" | "16:9" = "1:1",
+  ): AsyncGenerator<StreamChunk> {
+    try {
+      console.log("[GeminiAI] 🌊 開始串流生成圖片和文字");
+      console.log("[GeminiAI] 提示詞長度:", prompt.length);
+      console.log("[GeminiAI] 圖片長寬比:", aspectRatio);
+
+      // 🔑 創建專門的模型實例，配置為同時返回文字和圖片
+      const generationConfig: any = {
+        temperature: this.config?.temperature ?? 0.9,
+        topK: this.config?.topK ?? 1,
+        topP: this.config?.topP ?? 1,
+        maxOutputTokens: this.config?.maxOutputTokens ?? 2048,
+        responseModalities: ["TEXT", "IMAGE"],
+        imageConfig: {
+          aspectRatio: aspectRatio,
+        },
+      };
+
+      const multiModalModel = this.genAI.getGenerativeModel({
+        model: this.config?.model || this.defaultModel,
+        generationConfig,
+      });
+
+      const result = await multiModalModel.generateContentStream(prompt);
+
+      let textChunkCount = 0;
+      let imageCount = 0;
+
+      for await (const chunk of result.stream) {
+        const streamChunk: StreamChunk = { isComplete: false };
+
+        try {
+          const text = chunk.text();
+          if (text) {
+            streamChunk.text = text;
+            textChunkCount++;
+            console.log(
+              `[GeminiAI] 文字片段 #${textChunkCount}，長度:`,
+              text.length,
+            );
+          }
+        } catch (error) {
+          // 某些 chunk 可能沒有文字
+          console.error(`[GeminiAI] error: ${error}`);
+        }
+
+        for (const candidate of chunk.candidates || []) {
+          for (const part of candidate.content.parts) {
+            if ("inlineData" in part && part.inlineData) {
+              streamChunk.image = {
+                mimeType: part.inlineData.mimeType || "image/png",
+                data: part.inlineData.data,
+              };
+              imageCount++;
+            }
+          }
+        }
+
+        yield streamChunk;
+      }
+
+      // 發送完成信號
+      console.log(
+        `[GeminiAI] 🎉 串流完成 - 文字片段: ${textChunkCount}，圖片: ${imageCount}`,
+      );
+      yield { isComplete: true };
+    } catch (error) {
+      console.error("[GeminiAI] 串流生成圖片和文字失敗:", error);
+      throw new Error(`Gemini AI 串流圖文生成失敗: ${error}`);
     }
   }
 

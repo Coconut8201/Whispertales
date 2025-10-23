@@ -61,5 +61,9 @@ export class DebugRoute {
 
     // 列出所有 GridFS 文件
     this.router.get(`${this.url}/gridfs-list`, this.controller.gridFSList);
+    
+    this.router.post(`${this.url}/get-image`, 
+      validateRequest(["id"]),
+      this.controller.getImage);
   }
 }

@@ -261,61 +261,8 @@ export class UserService {
    */
   static async getUserStoryList(
     userId: string,
-  ): Promise<OperationResult<BookManageListInterface[]>> {
-    try {
-      const returnUserData: any = await userModel.findById(userId);
-
-      if (!returnUserData) {
-        console.warn(`[UserService.getUserStoryList] 找不到用戶: ${userId}`);
-        return { success: false, message: "找不到用戶" };
-      }
-
-      let returnUserData_booklist: userInterface["booklist"] =
-        returnUserData.booklist!;
-
-      // 驗證書本是否存在
-      const validBookIds = await Promise.all(
-        returnUserData_booklist.map(async (bookId) => ({
-          bookId,
-          exists: await storyModel.exists({ _id: bookId }),
-        })),
-      );
-
-      returnUserData_booklist = validBookIds
-        .filter((item) => item.exists)
-        .map((item) => item.bookId);
-
-      // 獲取書本詳細資料
-      const returnBookData: BookManageListInterface[] = await Promise.all(
-        returnUserData_booklist.map(async (bookId) => {
-          const bookData = await storyModel.findById(bookId);
-          if (!bookData) {
-            return {
-              bookId: "",
-              bookName: "",
-              bookFirstImageBase64: "",
-            };
-          }
-          return {
-            bookId: bookData._id.toString(),
-            bookName: bookData.storyTale.split("\n\n")[0] || "",
-            bookFirstImageBase64: bookData.image_base64?.[0] || "",
-          };
-        }),
-      );
-
-      console.log(
-        `[UserService.getUserStoryList] 成功獲取用戶 ${userId} 的故事列表`,
-      );
-      return {
-        success: true,
-        message: "獲取故事列表成功",
-        data: returnBookData,
-      };
-    } catch (e: any) {
-      console.error(`[UserService.getUserStoryList] 錯誤: ${e.message}`);
-      return { success: false, message: `獲取故事列表失敗: ${e.message}` };
-    }
+  ): Promise<void> {
+    
   }
 
   /**
