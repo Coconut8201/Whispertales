@@ -2,7 +2,6 @@ import { Route } from "./interfaces/Route";
 import { StoryRoute } from "./routers/StoryRoute";
 import { UserRoute } from "./routers/userRoute";
 import { VoiceRoute } from "./routers/VoiceRoute";
-import { ImageRoute } from "./routers/imageRoute";
 import { DebugRoute } from "./routers/debugRoute";
 import { Router } from "express";
 
@@ -16,7 +15,6 @@ const routes: Array<RouteHandler> = [
   new StoryRoute(),
   new UserRoute(),
   new VoiceRoute(),
-  new ImageRoute(), // 新增圖片路由
 ];
 
 // 只在開發環境加入調試路由

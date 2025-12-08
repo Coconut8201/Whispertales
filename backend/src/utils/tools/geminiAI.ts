@@ -477,6 +477,136 @@ export class GeminiAI {
   }
 
   /**
+   * 🌊 串流生成多張圖片（透過多次呼叫 API）
+   * 每生成一張圖片就立即返回，實現漸進式載入效果
+   *
+   * @param prompt 圖片生成提示詞
+   * @param count 要生成的圖片數量（預設 2）
+   * @param aspectRatio 圖片長寬比（預設 1:1）
+   * @returns 串流區塊（每個區塊包含一張圖片）
+   *
+   * @example
+   * ```typescript
+   * let imageCount = 0;
+   * for await (const chunk of gemini.generateMultipleImagesStream(
+   *   "A beautiful sunset over mountains",
+   *   3,
+   *   "16:9"
+   * )) {
+   *   if (chunk.image) {
+   *     imageCount++;
+   *     console.log(`收到第 ${imageCount} 張圖片`);
+   *   }
+   *   if (chunk.isComplete) {
+   *     console.log("全部圖片生成完成！");
+   *   }
+   * }
+   * ```
+   */
+  async *generateMultipleImagesStream(
+    prompt: string,
+    count: number = 2,
+    aspectRatio: "1:1" | "3:4" | "4:3" | "9:16" | "16:9" = "1:1",
+  ): AsyncGenerator<StreamChunk> {
+    try {
+      console.log(`[GeminiAI] 🌊 開始串流生成 ${count} 張圖片`);
+      console.log("[GeminiAI] 提示詞長度:", prompt.length);
+      console.log("[GeminiAI] 圖片長寬比:", aspectRatio);
+
+      for (let i = 0; i < count; i++) {
+        console.log(`[GeminiAI] 正在生成第 ${i + 1}/${count} 張圖片...`);
+
+        const generationConfig: any = {
+          temperature: this.config?.temperature ?? 0.9,
+          topK: this.config?.topK ?? 1,
+          topP: this.config?.topP ?? 1,
+          maxOutputTokens: this.config?.maxOutputTokens ?? 2048,
+          responseModalities: ["IMAGE"],
+          imageConfig: {
+            aspectRatio: aspectRatio,
+          },
+        };
+
+        const imageModel = this.genAI.getGenerativeModel({
+          model: this.config?.model || this.defaultModel,
+          generationConfig,
+        });
+
+        const result = await imageModel.generateContent(prompt);
+        const response = result.response;
+
+        // 檢查回應是否有效
+        if (
+          !response ||
+          !response.candidates ||
+          response.candidates.length === 0
+        ) {
+          console.error(
+            `[GeminiAI] ⚠️ 第 ${i + 1} 張圖片生成失敗：API 未返回有效的 candidates`,
+          );
+          console.error(
+            "[GeminiAI] 完整回應:",
+            JSON.stringify(response, null, 2),
+          );
+
+          if (response.promptFeedback) {
+            console.error(
+              "[GeminiAI] Prompt Feedback:",
+              response.promptFeedback,
+            );
+          }
+
+          continue; // 跳過這張圖片，繼續嘗試下一張
+        }
+
+        // 提取並立即返回圖片
+        let foundImage = false;
+        for (const candidate of response.candidates) {
+          if (!candidate.content || !candidate.content.parts) {
+            console.warn(
+              `[GeminiAI] ⚠️ 第 ${i + 1} 張圖片的 candidate 沒有 content 或 parts`,
+            );
+            continue;
+          }
+
+          for (const part of candidate.content.parts) {
+            if ("inlineData" in part && part.inlineData) {
+              const image: ImagePart = {
+                mimeType: part.inlineData.mimeType || "image/png",
+                data: part.inlineData.data,
+              };
+              foundImage = true;
+              console.log(
+                `[GeminiAI] ✅ 第 ${i + 1} 張圖片生成成功，Base64 長度:`,
+                image.data.length,
+              );
+
+              // 立即返回這張圖片
+              yield {
+                image,
+                isComplete: false,
+              };
+            }
+          }
+        }
+
+        if (!foundImage) {
+          console.warn(
+            `[GeminiAI] ⚠️ 第 ${i + 1} 張圖片未找到 inlineData，可能生成失敗`,
+          );
+        }
+      }
+
+      // 發送完成信號
+      console.log(`[GeminiAI] 🎉 所有 ${count} 張圖片生成完成`);
+      yield { isComplete: true };
+    } catch (error) {
+      console.error("[GeminiAI] ❌ 串流生成多張圖片失敗:", error);
+      throw new Error(`Gemini AI 串流多圖片生成失敗: ${error}`);
+    }
+  }
+
+  /**
    * 儲存圖片到檔案
    * @param imageData base64 編碼的圖片資料
    * @param filePath 儲存路徑

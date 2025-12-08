@@ -23,6 +23,13 @@ export class StoryRoute extends Route {
       this.Controller.testGeminiApi,
     );
 
+    // 測試多張圖片生成
+    this.router.post(
+      `${this.url}/test_multiple_images`,
+      authenticateToken,
+      this.Controller.testMultipleImages,
+    );
+
     // 生成一繪本（包含圖片和文字）
     this.router.post(
       `${this.url}/genstory`,
@@ -32,7 +39,10 @@ export class StoryRoute extends Route {
       this.Controller.GenStory,
     );
 
-    this.router.post(`${this.url}/startstory`, this.Controller.GetStoryByStoryId);
+    this.router.post(
+      `${this.url}/startstory`,
+      this.Controller.GetStoryByStoryId,
+    );
     this.router.get(
       `${this.url}/getstorylist_fdb`,
       authenticateToken,

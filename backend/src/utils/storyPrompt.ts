@@ -46,5 +46,5 @@ Please write the complete story first in Chinese, then generate one beautiful il
     // TODO 測試時註解
     // return storyPromptChinese + "\n" + imagePromptEnglish;
     
-    return "隨便生成一張圖片和這張圖片的文字描述"
+    return "Show me two picture of a nano banana dish in a fancy restaurant with a Gemini theme"
   }

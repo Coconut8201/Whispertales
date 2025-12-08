@@ -38,19 +38,16 @@ export class DataBase {
   }
 
   static async getStoryById(_id: string): Promise<object | any> {
-    return await StoryService.getStoryById(_id);
+    return await StoryService.getStoryByStoryId(_id);
   }
 
   static async getstoryList(userId: string): Promise<any> {
-    const result = await UserService.getUserStoryList(userId);
-    if (result.success) {
-      return {
-        success: true,
-        message: result.message,
-        value: result.data,
-      };
-    }
-    return result;
+    // TODO: getUserStoryList 尚未實作，暫時返回空列表
+    return {
+      success: true,
+      message: "獲取故事列表（功能待實作）",
+      value: [],
+    };
   }
 
   static async Update_StoryImagePromptSingle(

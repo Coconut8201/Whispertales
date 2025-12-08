@@ -6,7 +6,7 @@ import { GeminiAI } from "../utils/tools/geminiAI";
 import PQueue from "p-queue";
 import { getCurrentUserId } from "../utils/authHelpers";
 import { asyncHandler } from "../middleware/errorMiddleware";
-import { RoleForm, StoryRequestBody } from "../types/story";
+import { StoryRequestBody } from "../types/story";
 import { GridFSStorageService } from "../services/GridFSStorageService";
 import { StoryService } from "../database/services/StoryService";
 import { buildStoryPrompt } from "../utils/storyPrompt";
@@ -34,23 +34,191 @@ export class StoryController extends Controller {
   public testGeminiApi = asyncHandler(async (req: Request, res: Response) => {
     // 直接使用共用實例
     const result = await this.gemini.generateText("Hello, world!");
-    res.success(result, 'This is StoryController');
+    res.success(result, "This is StoryController");
   });
+
+  /**
+   * 測試多張圖片生成功能
+   * @param Request body { prompt: string, count?: number, aspectRatio?: string, stream?: boolean }
+   * @example POST http://localhost:7943/story/test_multiple_images
+   * {
+   *   "prompt": "A beautiful sunset over mountains",
+   *   "count": 3,
+   *   "aspectRatio": "16:9",
+   *   "stream": false
+   * }
+   */
+  public testMultipleImages = asyncHandler(
+    async (req: Request, res: Response) => {
+      const {
+        prompt = "A beautiful sunset over mountains",
+        count = 2,
+        aspectRatio = "1:1",
+        stream = false,
+      } = req.body;
+
+      // 驗證參數
+      const validAspectRatios = ["1:1", "3:4", "4:3", "9:16", "16:9"];
+      if (!validAspectRatios.includes(aspectRatio)) {
+        return res.error(
+          `無效的 aspectRatio，請使用: ${validAspectRatios.join(", ")}`,
+          400,
+        );
+      }
+
+      if (count < 1 || count > 10) {
+        return res.error("count 必須在 1-10 之間", 400);
+      }
+
+      try {
+        if (stream) {
+          // 串流模式
+          console.log(`[testMultipleImages] 開始串流生成 ${count} 張圖片`);
+
+          // 設定 SSE headers
+          res.setHeader("Content-Type", "text/event-stream");
+          res.setHeader("Cache-Control", "no-cache");
+          res.setHeader("Connection", "keep-alive");
+          res.setHeader("X-Accel-Buffering", "no");
+
+          // 發送初始連接確認
+          res.write(
+            `data: ${JSON.stringify({
+              type: "connected",
+              message: `開始生成 ${count} 張圖片...`,
+              config: { prompt, count, aspectRatio },
+            })}\n\n`,
+          );
+
+          let imageCount = 0;
+          const startTime = Date.now();
+
+          for await (const chunk of this.gemini.generateMultipleImagesStream(
+            prompt,
+            count,
+            aspectRatio as "1:1" | "3:4" | "4:3" | "9:16" | "16:9",
+          )) {
+            if (chunk.image) {
+              imageCount++;
+              const imageWithPrefix = `data:${chunk.image.mimeType};base64,${chunk.image.data}`;
+
+              res.write(
+                `data: ${JSON.stringify({
+                  type: "image",
+                  image: imageWithPrefix,
+                  imageNumber: imageCount,
+                  totalCount: count,
+                  mimeType: chunk.image.mimeType,
+                  dataLength: chunk.image.data.length,
+                })}\n\n`,
+              );
+
+              console.log(
+                `[testMultipleImages] 已發送第 ${imageCount}/${count} 張圖片`,
+              );
+            }
+
+            if (chunk.isComplete) {
+              const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+              res.write(
+                `data: ${JSON.stringify({
+                  type: "complete",
+                  message: "所有圖片生成完成",
+                  totalImages: imageCount,
+                  elapsedTime: `${elapsed}秒`,
+                })}\n\n`,
+              );
+              console.log(
+                `[testMultipleImages] 串流完成，總耗時: ${elapsed}秒`,
+              );
+            }
+          }
+
+          res.end();
+        } else {
+          // 非串流模式 - 收集所有生成的圖片
+          console.log(`[testMultipleImages] 開始批次生成 ${count} 張圖片`);
+          const startTime = Date.now();
+
+          const images: Array<{
+            dataUri: string;
+            mimeType: string;
+            size: number;
+          }> = [];
+
+          // 迭代 async generator 來收集所有圖片
+          for await (const chunk of this.gemini.generateMultipleImagesStream(
+            prompt,
+            count,
+            aspectRatio as "1:1" | "3:4" | "4:3" | "9:16" | "16:9",
+          )) {
+            if (chunk.image) {
+              images.push({
+                dataUri: `data:${chunk.image.mimeType};base64,${chunk.image.data}`,
+                mimeType: chunk.image.mimeType,
+                size: chunk.image.data.length,
+              });
+              console.log(
+                `[testMultipleImages] 已收到第 ${images.length}/${count} 張圖片`,
+              );
+            }
+          }
+
+          const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+
+          console.log(
+            `[testMultipleImages] 批次生成完成，總耗時: ${elapsed}秒`,
+          );
+
+          return res.success(
+            {
+              images,
+              metadata: {
+                prompt,
+                count: images.length,
+                aspectRatio,
+                elapsedTime: `${elapsed}秒`,
+                averageTimePerImage: `${(parseFloat(elapsed) / images.length).toFixed(2)}秒`,
+              },
+            },
+            `成功生成 ${images.length} 張圖片`,
+          );
+        }
+      } catch (error) {
+        console.error("[testMultipleImages] 錯誤:", error);
+
+        if (stream) {
+          res.write(
+            `data: ${JSON.stringify({
+              type: "error",
+              message: "圖片生成失敗",
+              error: String(error),
+            })}\n\n`,
+          );
+          res.end();
+        } else {
+          return res.error("圖片生成失敗", 500, { error: String(error) });
+        }
+      }
+    },
+  );
 
   /**
    * 透過storyId取得故事資訊
    */
-  public GetStoryByStoryId = asyncHandler(async (req: Request, res: Response) => { 
-    // TODO 這邊可以改用param
-    const { storyId } = req.body;
-    const story: storyInterface = await StoryService.getStoryByStoryId(storyId) as storyInterface;
-    res.success(story, '成功透過 storyId 拿取故事');
-  })
+  public GetStoryByStoryId = asyncHandler(
+    async (req: Request, res: Response) => {
+      // TODO 這邊可以改用param
+      const { storyId } = req.body;
+      const story: storyInterface = (await StoryService.getStoryByStoryId(
+        storyId,
+      )) as storyInterface;
+      res.success(story, "成功透過 storyId 拿取故事");
+    },
+  );
 
   //拿資料庫故事
-  public async GetStorylistFDB(req: Request, res: Response) {
-
-  }
+  public async GetStorylistFDB(req: Request, res: Response) {}
 
   /**
    * 使用 Gemini AI 生成繪本（包含故事文字和圖片）- SSE 串流版本
@@ -82,7 +250,7 @@ export class StoryController extends Controller {
       // 如果請求串流模式
       if (stream) {
         console.log("Stream mode enabled");
-        
+
         // 設定 SSE headers
         res.setHeader("Content-Type", "text/event-stream");
         res.setHeader("Cache-Control", "no-cache");
@@ -158,10 +326,7 @@ export class StoryController extends Controller {
           });
 
           // 1. 創建故事文檔
-          const storyId = await StoryService.createStory(
-            fullText,
-            storyInfo,
-          );
+          const storyId = await StoryService.createStory(fullText, storyInfo);
 
           if (!storyId) {
             res.write(
@@ -265,7 +430,7 @@ export class StoryController extends Controller {
           createdAt: new Date().toISOString(),
         });
 
-        const storyId = await StoryService.createStory(content.text, storyInfo)
+        const storyId = await StoryService.createStory(content.text, storyInfo);
 
         if (!storyId) {
           return res.error("故事保存失敗", 500);
