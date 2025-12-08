@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { PDFGenerator } from '../../utils/pdfGenerator';
 import { StoryData } from '../../utils/storyPlayer';
-import '../../styles/ChildrenTheme.css';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Download, FileText, Package, Eye, Loader2, Info } from 'lucide-react';
 
 interface DownloadControlsProps {
   storyData: StoryData;
@@ -67,188 +69,116 @@ const DownloadControls: React.FC<DownloadControlsProps> = ({
   const downloadCount = storyData.image_base64?.length || 0;
 
   return (
-    <div className={`children-card ${className}`}>
-      <div style={{ textAlign: 'center' }}>
-        <h3 style={{ 
-          color: '#ff6b6b', 
-          marginBottom: '20px',
-          fontSize: '18px',
-          fontWeight: 'bold'
-        }}>
-          📥 下載我的故事書
-        </h3>
+    <Card className={`border-2 border-children-primary/20 shadow-children-sm ${className}`}>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg text-children-primary flex items-center justify-center gap-2">
+          <Download className="w-5 h-5" />
+          下載我的故事書
+        </CardTitle>
+      </CardHeader>
 
+      <CardContent className="space-y-4">
         {/* 下載選項 */}
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ 
-            display: 'flex',
-            gap: '12px',
-            justifyContent: 'center',
-            marginBottom: '16px',
-            flexWrap: 'wrap'
-          }}>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap justify-center gap-4">
             {/* 下載類型選擇 */}
-            <label style={{ 
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              color: '#2d3436'
-            }}>
+            <label className={`flex items-center gap-2 cursor-pointer p-2 rounded-lg border transition-all ${downloadType === 'pdf' ? 'bg-blue-50 border-blue-200 shadow-sm' : 'border-transparent hover:bg-gray-50'}`}>
               <input
                 type="radio"
                 value="pdf"
                 checked={downloadType === 'pdf'}
                 onChange={(e) => setDownloadType(e.target.value as 'pdf')}
                 disabled={disabled || isDownloading}
+                className="accent-children-primary"
               />
-              📄 PDF格式
+              <FileText className="w-4 h-4 text-children-primary" />
+              <span className="text-sm font-medium">PDF格式</span>
             </label>
 
-            <label style={{ 
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              color: '#2d3436'
-            }}>
+            <label className={`flex items-center gap-2 cursor-pointer p-2 rounded-lg border transition-all ${downloadType === 'zip' ? 'bg-blue-50 border-blue-200 shadow-sm' : 'border-transparent hover:bg-gray-50'}`}>
               <input
                 type="radio"
                 value="zip"
                 checked={downloadType === 'zip'}
                 onChange={(e) => setDownloadType(e.target.value as 'zip')}
                 disabled={disabled || isDownloading}
+                className="accent-children-primary"
               />
-              📦 完整包 (PDF + 圖片 + 文字)
+              <Package className="w-4 h-4 text-children-primary" />
+              <span className="text-sm font-medium">完整包 (圖片+文字)</span>
             </label>
           </div>
 
           {/* 注音選項 */}
-          <label style={{ 
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            color: '#2d3436',
-            marginBottom: '16px'
-          }}>
-            <input
-              type="checkbox"
-              checked={showZhuyin}
-              onChange={(e) => setShowZhuyin(e.target.checked)}
-              disabled={disabled || isDownloading}
-            />
-            🔤 包含注音符號 (適合學習中文)
-          </label>
+          <div className="flex justify-center">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showZhuyin}
+                onChange={(e) => setShowZhuyin(e.target.checked)}
+                disabled={disabled || isDownloading}
+                className="w-4 h-4 rounded border-gray-300 accent-children-secondary"
+              />
+              <span className="text-sm text-gray-700">🔤 包含注音符號 (適合學習中文)</span>
+            </label>
+          </div>
         </div>
 
         {/* 下載按鈕 */}
-        <div style={{ 
-          display: 'flex', 
-          gap: '12px', 
-          justifyContent: 'center',
-          marginBottom: '16px',
-          flexWrap: 'wrap'
-        }}>
+        <div className="flex flex-wrap justify-center gap-3">
           {downloadType === 'pdf' ? (
             <>
-              <button
+              <Button
                 onClick={handlePreviewPDF}
                 disabled={disabled || isDownloading}
-                className="children-btn children-btn-secondary"
-                style={{ 
-                  fontSize: '14px',
-                  padding: '12px 20px',
-                  minWidth: '120px'
-                }}
+                variant="outline"
+                className="flex-1 min-w-[120px]"
               >
-                {isDownloading ? '⏳ 準備中...' : '👀 預覽PDF'}
-              </button>
-              
-              <button
+                {isDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Eye className="w-4 h-4 mr-2" />}
+                {isDownloading ? '準備中...' : '預覽PDF'}
+              </Button>
+
+              <Button
                 onClick={handleDownloadPDF}
                 disabled={disabled || isDownloading}
-                className="children-btn children-btn-primary"
-                style={{ 
-                  fontSize: '14px',
-                  padding: '12px 20px',
-                  minWidth: '120px'
-                }}
+                className="flex-1 min-w-[120px] bg-children-primary hover:bg-children-primary/90"
               >
-                {isDownloading ? '⏳ 下載中...' : '📄 下載PDF'}
-              </button>
+                {isDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+                {isDownloading ? '下載中...' : '下載PDF'}
+              </Button>
             </>
           ) : (
-            <button
+            <Button
               onClick={handleDownloadZIP}
               disabled={disabled || isDownloading}
-              className="children-btn children-btn-primary"
-              style={{ 
-                fontSize: '14px',
-                padding: '12px 20px',
-                minWidth: '140px'
-              }}
+              className="flex-1 min-w-[120px] bg-children-primary hover:bg-children-primary/90"
             >
-              {isDownloading ? '⏳ 打包中...' : '📦 下載完整包'}
-            </button>
+              {isDownloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Package className="w-4 h-4 mr-2" />}
+              {isDownloading ? '打包中...' : '下載完整包'}
+            </Button>
           )}
         </div>
 
         {/* 下載信息 */}
-        <div style={{ 
-          fontSize: '12px', 
-          color: '#636e72',
-          marginBottom: '12px'
-        }}>
+        <div className="text-center text-xs text-gray-500">
           📊 包含 {downloadCount} 張圖片和 {storyLines.length} 頁故事
         </div>
 
         {/* 下載說明 */}
-        <div style={{ 
-          backgroundColor: '#f8f9fa',
-          padding: '12px',
-          borderRadius: '8px',
-          fontSize: '12px',
-          color: '#636e72',
-          textAlign: 'left'
-        }}>
-          <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#2d3436' }}>
-            💡 下載說明：
-          </div>
-          <ul style={{ margin: 0, paddingLeft: '16px' }}>
-            <li>📄 <strong>PDF格式</strong>：適合閱讀和列印的電子書</li>
-            <li>📦 <strong>完整包</strong>：包含PDF、原始圖片和故事文字檔案</li>
-            <li>🔤 <strong>注音符號</strong>：幫助小朋友學習中文發音</li>
-            <li>💾 下載的檔案會保存到你的下載資料夾</li>
+        <div className="bg-gray-50 p-3 rounded-lg text-xs text-gray-600 space-y-2 text-left border border-gray-100">
+          <p className="font-bold flex items-center gap-1 text-gray-800">
+            <Info className="w-3 h-3" />
+            下載說明：
+          </p>
+          <ul className="list-disc pl-4 space-y-1">
+            <li><strong>PDF格式</strong>：適合閱讀和列印的電子書</li>
+            <li><strong>完整包</strong>：包含PDF、原始圖片和故事文字檔案</li>
+            <li><strong>注音符號</strong>：幫助小朋友學習中文發音</li>
+            <li>下載的檔案會保存到你的下載資料夾</li>
           </ul>
         </div>
-
-        {/* 加載狀態 */}
-        {isDownloading && (
-          <div style={{ 
-            marginTop: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            color: '#4ecdc4',
-            fontSize: '14px',
-            fontWeight: 'bold'
-          }}>
-            <div className="children-loading-spinner" style={{ 
-              width: '20px', 
-              height: '20px',
-              borderWidth: '2px'
-            }}></div>
-            正在準備你的故事書...
-          </div>
-        )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

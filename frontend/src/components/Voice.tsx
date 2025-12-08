@@ -1,7 +1,12 @@
 import { useState, useRef, ChangeEvent, FormEvent, useEffect } from "react";
 import { getVoiceList, UploadVoice } from "../utils/tools/fetch.ts";
 import { useNavigate } from "react-router-dom";
-import "../styles/ChildrenTheme.css";
+import { Card, CardContent } from "./ui/card";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Loading } from "./ui/loading";
+import ChildrenHeader from "./story/ChildrenHeader";
+import { Mic, Square, Play, Volume2, Upload, Check, Music } from "lucide-react";
 
 export default function Voice() {
   const [isRecording, setIsRecording] = useState(false);
@@ -19,7 +24,6 @@ export default function Voice() {
   useEffect(() => {
     const fetchVoiceList = async () => {
       const result = await getVoiceList();
-      console.log(`語音列表結果:`, result);
       if (result.success && Array.isArray(result.data)) {
         setVoiceOptions(result.data);
       } else {
@@ -27,7 +31,7 @@ export default function Voice() {
       }
     };
     fetchVoiceList();
-  }, [voiceOptions]);
+  }, [isLoading]); // Refetch list after successful upload (isLoading changes from true to false)
 
   const startRecording = async () => {
     try {
@@ -94,10 +98,10 @@ export default function Voice() {
         setIsLoading(true);
         await UploadVoice(audioBlob, audioName);
         alert("🎉 語音模型上傳成功！現在您可以使用這個聲音來生成故事了！");
-        // if (audioUrl) {
-        //   URL.revokeObjectURL(audioUrl);
-        //   setAudioUrl(null);
-        // }
+        // Clear recording after success
+        setAudioBlob(null);
+        setAudioUrl(null);
+        setAudioName("model_name");
       } catch (error) {
         console.error("上傳音檔時發生錯誤:", error);
         alert("😔 語音模型上傳失敗，請稍後再試。");
@@ -109,268 +113,185 @@ export default function Voice() {
     }
   };
 
+  // Check login logic could be added here similar to other pages
+
   return (
-    <div className="children-theme">
-      <div className="children-header">
-        <h1>🎤 Whisper Tales 語音工作室</h1>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-children-bg-primary to-children-bg-secondary flex flex-col">
+      <ChildrenHeader
+        isLogin={true} // Assuming user is logged in if they can access this page, or better to verify
+        onLogout={() => { /* User logout logic if needed, or rely on parent headers */ }}
+        title="🎤 Whisper Tales 語音工作室"
+        showNavButtons={true}
+      />
 
-      <div className="children-container">
-        <div
-          className="children-row"
-          style={{ alignItems: "flex-start", gap: "32px" }}
-        >
-          {/* 側邊欄 - 現有語音模型 */}
-          <div className="children-card" style={{ flex: "0 0 300px" }}>
-            <h3
-              style={{
-                fontSize: "var(--font-size-lg)",
-                color: "var(--text-primary)",
-                marginBottom: "20px",
-                textAlign: "center",
-              }}
-            >
-              🎵 現有語音模型
-            </h3>
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-            >
-              {voiceOptions.length === 0 ? (
-                <p
-                  style={{
-                    color: "var(--text-secondary)",
-                    textAlign: "center",
-                  }}
-                >
-                  還沒有語音模型喔！
-                </p>
-              ) : (
-                voiceOptions.map((voice) => (
-                  <div
-                    key={voice}
-                    className="children-btn children-btn-secondary"
-                    style={{
-                      padding: "12px 16px",
-                      fontSize: "var(--font-size-sm)",
-                      cursor: "default",
-                      transform: "none",
-                    }}
-                  >
-                    🔊 {voice}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* 主內容區 */}
-          <div className="children-card" style={{ flex: 1 }}>
-            <h3
-              style={{
-                fontSize: "var(--font-size-lg)",
-                color: "var(--text-primary)",
-                marginBottom: "24px",
-                textAlign: "center",
-              }}
-            >
-              ✨ 創建新的語音模型
-            </h3>
-
-            {/* 模型名稱輸入 */}
-            <div className="children-row" style={{ marginBottom: "24px" }}>
-              <label className="children-label" style={{ flex: "0 0 120px" }}>
-                📝 模型名稱：
-              </label>
-              <input
-                type="text"
-                value={audioName}
-                onChange={handleInputChange}
-                className="children-input"
-                placeholder="請輸入英文名稱"
-                style={{ flex: 1 }}
-              />
-            </div>
-
-            {/* 錄音按鈕 */}
-            <div
-              style={{
-                display: "flex",
-                gap: "16px",
-                justifyContent: "center",
-                marginBottom: "24px",
-              }}
-            >
-              <button
-                type="button"
-                onClick={startRecording}
-                disabled={isRecording}
-                className={`children-btn children-btn-success ${isRecording ? "" : "children-btn-large"}`}
-                style={{ opacity: isRecording ? 0.5 : 1 }}
-              >
-                {isRecording ? "🔴 錄音中..." : "🎙️ 開始錄製"}
-              </button>
-
-              <button
-                type="button"
-                onClick={stopRecording}
-                disabled={!isRecording}
-                className={`children-btn children-btn-warning ${!isRecording ? "" : "children-btn-large"}`}
-                style={{ opacity: !isRecording ? 0.5 : 1 }}
-              >
-                ⏹️ 結束錄製
-              </button>
-            </div>
-
-            {/* 錄音狀態顯示 */}
-            {isRecording && (
-              <div
-                className="children-card"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #ff6b6b 0%, #ffd93d 100%)",
-                  color: "white",
-                  textAlign: "center",
-                  marginBottom: "24px",
-                  padding: "16px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "12px",
-                  }}
-                >
-                  <div
-                    className="children-record-btn recording"
-                    style={{ width: "24px", height: "24px" }}
-                  >
-                    🔴
-                  </div>
-                  <span
-                    style={{
-                      fontSize: "var(--font-size-lg)",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    正在錄音中... {Math.floor(recordingTime / 60)}:
-                    {String(recordingTime % 60).padStart(2, "0")}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* 音訊播放 */}
-            {audioUrl && (
-              <div
-                className="children-card"
-                style={{ textAlign: "center", marginBottom: "24px" }}
-              >
-                <h4
-                  style={{ color: "var(--text-primary)", marginBottom: "12px" }}
-                >
-                  🎧 預覽錄音
-                </h4>
-                <audio src={audioUrl} controls style={{ maxWidth: "100%" }} />
-              </div>
-            )}
-
-            {/* 範例文本 */}
-            <div
-              className="children-card"
-              style={{
-                background: "var(--bg-secondary)",
-                marginBottom: "24px",
-              }}
-            >
-              <h4
-                style={{
-                  color: "var(--text-primary)",
-                  marginBottom: "12px",
-                  fontSize: "var(--font-size-md)",
-                }}
-              >
-                📖 範例文本
-              </h4>
-              <p
-                style={{
-                  background: "var(--bg-card)",
-                  padding: "16px",
-                  borderRadius: "var(--border-radius-md)",
-                  color: "var(--text-primary)",
-                  lineHeight: "1.6",
-                  margin: 0,
-                }}
-              >
-                從前有一座美麗的森林，住著一隻聰明的小狐狸叫小紅。她最喜歡在夜晚抬頭看星星。有一天，小紅發現天上有一顆特別明亮的星星，閃爍著她從未見過的光芒。
-              </p>
-            </div>
-
-            {/* 提交表單 */}
-            <form onSubmit={handleSubmit} style={{ textAlign: "center" }}>
-              <button
-                type="submit"
-                className="children-btn children-btn-primary children-btn-large"
-                disabled={!audioBlob || isLoading}
-                style={{
-                  opacity: !audioBlob || isLoading ? 0.5 : 1,
-                  marginBottom: "20px",
-                }}
-              >
-                {isLoading ? "🔄 上傳中..." : "🚀 提交語音模型"}
-              </button>
-            </form>
-
-            {/* 返回按鈕 */}
-            <div style={{ textAlign: "center" }}>
-              <button
-                onClick={() => navigate("/style")}
-                className="children-btn children-btn-secondary"
-              >
-                🏠 返回故事生成
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 載入遮罩 */}
       {isLoading && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            background: "rgba(0, 0, 0, 0.7)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1000,
-          }}
-        >
-          <div
-            className="children-card"
-            style={{ textAlign: "center", maxWidth: "300px" }}
-          >
-            <div className="children-loading">
-              <div className="children-loading-spinner"></div>
-            </div>
-            <p
-              style={{
-                color: "var(--text-primary)",
-                fontSize: "var(--font-size-lg)",
-                fontWeight: "bold",
-                margin: 0,
-              }}
-            >
-              🎵 正在處理您的語音...
-            </p>
-          </div>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
+          <Card className="w-auto p-8 shadow-2xl">
+            <Loading size="lg" emoji="🎵" message="正在處理您的語音..." />
+          </Card>
         </div>
       )}
+
+      <div className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* 側邊欄 - 現有語音模型 */}
+        <div className="lg:col-span-4 xl:col-span-3 space-y-4">
+          <Card className="h-full border-none shadow-children-card">
+            <CardContent className="p-6">
+              <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <Music className="w-5 h-5 text-children-primary" />
+                現有語音模型
+              </h3>
+
+              <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                {voiceOptions.length === 0 ? (
+                  <div className="text-center py-8 text-gray-400 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                    <p>還沒有語音模型喔！</p>
+                  </div>
+                ) : (
+                  voiceOptions.map((voice) => (
+                    <div
+                      key={voice}
+                      className="bg-white border border-gray-100 p-3 rounded-lg shadow-sm flex items-center gap-3 hover:shadow-md transition-shadow"
+                    >
+                      <div className="bg-children-secondary/10 p-2 rounded-full text-children-secondary">
+                        <Volume2 className="w-4 h-4" />
+                      </div>
+                      <span className="font-medium text-gray-700">{voice}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 主內容區 */}
+        <div className="lg:col-span-8 xl:col-span-9">
+          <Card className="border-none shadow-children-card overflow-hidden">
+            <div className="bg-gradient-to-r from-children-primary/10 to-children-secondary/10 p-6 text-center">
+              <h3 className="text-2xl font-bold text-gray-800">
+                ✨ 創建新的語音模型
+              </h3>
+              <p className="text-gray-500 mt-2">錄製一段聲音，讓我們學習你的說話方式！</p>
+            </div>
+
+            <CardContent className="p-6 sm:p-8 space-y-8">
+              {/* 模型名稱輸入 */}
+              <div className="max-w-xl mx-auto space-y-2">
+                <label className="block text-sm font-bold text-gray-700 ml-1">
+                  📝 給你的聲音取個名字 (英文)
+                </label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    value={audioName}
+                    onChange={handleInputChange}
+                    className="pl-4 pr-4 h-12 text-lg rounded-xl border-2 border-gray-200 focus:border-children-primary focus:ring-children-primary/20"
+                    placeholder="例如: my_voice"
+                  />
+                  {/* Validity indicator could go here */}
+                </div>
+              </div>
+
+              {/* 錄音控制區 */}
+              <div className="flex flex-col items-center gap-6 py-4">
+                <div className="flex items-center gap-4">
+                  <Button
+                    type="button"
+                    onClick={startRecording}
+                    disabled={isRecording}
+                    className={`
+                       h-16 px-8 rounded-full text-lg font-bold shadow-lg transition-all transform hover:scale-105
+                       ${isRecording
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
+                        : "bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white border-4 border-red-100"}
+                     `}
+                  >
+                    <Mic className="w-6 h-6 mr-2" />
+                    開始錄音
+                  </Button>
+
+                  <Button
+                    type="button"
+                    onClick={stopRecording}
+                    disabled={!isRecording}
+                    className={`
+                       h-16 px-8 rounded-full text-lg font-bold shadow-lg transition-all transform hover:scale-105
+                       ${!isRecording
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
+                        : "bg-white text-red-500 border-4 border-red-100 hover:bg-red-50"}
+                     `}
+                  >
+                    <Square className="w-6 h-6 mr-2 fill-current" />
+                    結束錄製
+                  </Button>
+                </div>
+
+                {/* 錄音狀態 */}
+                {isRecording && (
+                  <div className="animate-pulse flex items-center gap-2 text-red-500 font-bold bg-red-50 px-4 py-2 rounded-full">
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
+                    正在錄音中... {Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, "0")}
+                  </div>
+                )}
+              </div>
+
+              {/* 預覽和提交區 */}
+              {(audioUrl || audioBlob) && (
+                <div className="bg-gray-50 rounded-2xl p-6 border-2 border-dashed border-gray-200 animate-fade-in">
+                  <div className="flex flex-col items-center gap-4">
+                    <h4 className="text-lg font-bold text-gray-700 flex items-center gap-2">
+                      <Play className="w-5 h-5 text-children-secondary" />
+                      預覽錄音
+                    </h4>
+
+                    {audioUrl && (
+                      <audio src={audioUrl} controls className="w-full max-w-md rounded-lg shadow-sm" />
+                    )}
+
+                    <form onSubmit={handleSubmit} className="w-full max-w-xs mt-4">
+                      <Button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full bg-children-success hover:bg-children-success/90 text-white h-12 text-lg font-bold rounded-xl shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1"
+                      >
+                        {isLoading ? "上傳中..." : (
+                          <>
+                            <Upload className="w-5 h-5 mr-2" />
+                            提交語音模型
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* 範例文本 */}
+              <div className="bg-blue-50/50 rounded-xl p-6 border border-blue-100">
+                <h4 className="text-blue-800 font-bold mb-3 flex items-center gap-2">
+                  <Check className="w-5 h-5" />
+                  唸唸看這段文字：
+                </h4>
+                <p className="text-gray-700 leading-relaxed text-lg bg-white p-4 rounded-lg shadow-sm border border-blue-100">
+                  從前有一座美麗的森林，住著一隻聰明的小狐狸叫小紅。她最喜歡在夜晚抬頭看星星。有一天，小紅發現天上有一顆特別明亮的星星，閃爍著她從未見過的光芒。
+                </p>
+              </div>
+
+              {/* 返回按鈕 */}
+              <div className="text-center pt-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate("/style")}
+                  className="text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                >
+                  不錄了，返回上一頁
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
 import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent } from './ui/card';
 import { Input } from './ui/input';
-import { Badge } from './ui/badge';
 import { Loading } from './ui/loading';
-import { Hero } from './ui/hero';
-import { StatCard } from './ui/stat-card';
-import { Sparkles, Heart, Star, Wand2, BookOpen, Palette } from 'lucide-react';
+import { Sparkles, Heart, Star, Wand2, BookOpen, Palette, ArrowRight, PlayCircle, Music, Mic } from 'lucide-react';
 
 const ChildrenUIDemo: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,219 +13,193 @@ const ChildrenUIDemo: React.FC = () => {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      alert('🎉 你的故事已經準備好了！');
+      alert('🎉 你的魔法故事書已經準備好了！');
     }, 2000);
   };
 
   const storyStyles = [
-    { id: 1, name: '童話風格', emoji: '🏰', description: '魔法城堡與公主王子的冒險' },
-    { id: 2, name: '太空冒險', emoji: '🚀', description: '探索宇宙的神秘旅程' },
-    { id: 3, name: '海底世界', emoji: '🐠', description: '與海洋生物一起遊玩' },
-    { id: 4, name: '森林探險', emoji: '🌳', description: '發現大自然的奧秘' },
+    { id: 1, name: '夢幻童話', emoji: '🏰', description: '公主與龍的魔法世界', color: 'from-pink-400 to-rose-400' },
+    { id: 2, name: '星際探險', emoji: '🚀', description: '飛向浩瀚無垠的宇宙', color: 'from-indigo-400 to-cyan-400' },
+    { id: 3, name: '深海奇遇', emoji: '🐳', description: '尋找傳說中的亞特蘭提斯', color: 'from-blue-400 to-teal-400' },
+    { id: 4, name: '森林秘境', emoji: '🌲', description: '與精靈共舞的綠色冒險', color: 'from-green-400 to-emerald-400' },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-children-bg-primary to-children-bg-secondary">
-      {/* Hero 區域 */}
-      <Hero
-        title="✨ WisperTales - 故事創作樂園 ✨"
-        subtitle="用你的想像力創造獨一無二的故事世界！"
-        emoji="📚"
-        gradient="rainbow"
-      />
+    <div className="min-h-screen relative overflow-hidden bg-[#F0F4F8]">
 
-      <div className="max-w-7xl mx-auto px-4 pb-12">
-        {/* 統計卡片區域 */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <StatCard emoji="🎨" value="50+" label="繪畫風格" color="primary" />
-          <StatCard emoji="📖" value="1000+" label="故事創作" color="secondary" />
-          <StatCard emoji="⭐" value="∞" label="創作可能" color="accent" />
-          <StatCard emoji="💝" value="100%" label="專屬故事" color="success" />
-        </div>
 
-        {/* 主要內容區 */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* 左側：快速創作卡片 */}
-          <Card className="hover:shadow-children-strong">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="w-6 h-6 text-children-primary" />
-                快速開始創作
-              </CardTitle>
-              <CardDescription>
-                選擇你喜歡的風格，立即開始創作你的故事！
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="block text-children-md font-bold text-children-text-primary mb-2">
-                  👤 你的名字
-                </label>
-                <Input placeholder="輸入你的名字..." />
-              </div>
-              <div>
-                <label className="block text-children-md font-bold text-children-text-primary mb-2">
-                  🎭 故事主角
-                </label>
-                <Input placeholder="你想要什麼角色？" />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="default">
-                  <Star className="w-4 h-4 mr-1" />
-                  熱門
-                </Badge>
-                <Badge variant="secondary">
-                  <Heart className="w-4 h-4 mr-1" />
-                  最愛
-                </Badge>
-                <Badge variant="success">
-                  <Wand2 className="w-4 h-4 mr-1" />
-                  新作品
-                </Badge>
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-2">
-              <Button
-                className="w-full"
-                size="lg"
-                onClick={handleCreateStory}
-                disabled={isLoading}
-              >
-                <Sparkles className="w-5 h-5 mr-2" />
-                {isLoading ? '創作中...' : '🚀 立即開始創作！'}
-              </Button>
-              <Button variant="outline" className="w-full">
-                <BookOpen className="w-5 h-5 mr-2" />
-                查看我的故事書
-              </Button>
-            </CardFooter>
-          </Card>
+      {/* Dynamic Background Mesh Gradients */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-50">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-purple-300 blur-[120px] animate-pulse-slow mix-blend-multiply" />
+        <div className="absolute top-[20%] right-[-10%] w-[40%] h-[60%] rounded-full bg-blue-300 blur-[120px] animate-pulse-slow mix-blend-multiply animation-delay-2000" />
+        <div className="absolute bottom-[-10%] left-[20%] w-[60%] h-[40%] rounded-full bg-pink-300 blur-[120px] animate-pulse-slow mix-blend-multiply animation-delay-4000" />
+      </div>
 
-          {/* 右側：功能介紹卡片 */}
-          <Card className="bg-gradient-to-br from-children-accent-light/30 to-children-info/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Palette className="w-6 h-6 text-children-secondary" />
-                超多驚喜功能
-              </CardTitle>
-              <CardDescription>
-                探索 WisperTales 的神奇功能！
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {[
-                { emoji: '🎨', title: 'AI 繪圖', desc: '用人工智慧畫出美麗的插圖' },
-                { emoji: '🎙️', title: '語音朗讀', desc: '聽故事用你自己的聲音' },
-                { emoji: '📚', title: '故事收藏', desc: '保存你最喜歡的故事' },
-                { emoji: '🌈', title: '多種風格', desc: '50+ 種繪畫風格任你選' },
-              ].map((feature, index) => (
-                <div
-                  key={index}
-                  className="flex items-start gap-3 p-3 rounded-children-md bg-white/50 hover:bg-white/80 transition-all hover:scale-105 cursor-pointer"
-                >
-                  <div className="text-3xl flex-shrink-0">{feature.emoji}</div>
-                  <div>
-                    <div className="font-bold text-children-text-primary">{feature.title}</div>
-                    <div className="text-children-sm text-children-text-secondary">{feature.desc}</div>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-12 space-y-16">
 
-        {/* 故事風格選擇區 */}
-        <div className="mb-8">
-          <h2 className="text-children-xl font-bold text-children-text-primary mb-4 text-center">
-            🎨 選擇你喜歡的故事風格
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {storyStyles.map((style) => (
-              <Card
-                key={style.id}
-                className={`cursor-pointer transition-all ${
-                  selectedCard === style.id
-                    ? 'border-children-primary border-4 shadow-children-strong scale-105'
-                    : 'hover:scale-105'
-                }`}
-                onClick={() => setSelectedCard(style.id)}
-              >
-                <CardContent className="text-center pt-6">
-                  <div className="text-5xl mb-3 animate-bounce-slow">{style.emoji}</div>
-                  <h3 className="text-children-md font-bold text-children-text-primary mb-2">
-                    {style.name}
-                  </h3>
-                  <p className="text-children-sm text-children-text-secondary">
-                    {style.description}
-                  </p>
-                  {selectedCard === style.id && (
-                    <div className="mt-3">
-                      <Badge variant="success" className="animate-pulse">
-                        ✓ 已選擇
-                      </Badge>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+        {/* Validated Premium Hero Section */}
+        <div className="text-center space-y-6 animate-fade-in-up">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/40 backdrop-blur-md border border-white/50 shadow-sm text-indigo-600 font-bold text-sm tracking-wide uppercase">
+            <Sparkles className="w-4 h-4" />
+            AI Story Magic Engine v2.0
+          </div>
+          <h1 className="text-5xl md:text-7xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-fuchsia-500 to-indigo-600 drop-shadow-sm">
+            WhisperTales
+            <span className="block text-2xl md:text-3xl mt-2 font-bold text-gray-600 tracking-normal">
+              讓想像力飛翔的魔法繪本工廠 ✨
+            </span>
+          </h1>
+          <p className="max-w-2xl mx-auto text-lg text-gray-600 leading-relaxed font-medium">
+            專為孩子打造的 AI 故事生成器。選擇風格、錄製聲音，一鍵生成獨一無二的互動式有聲繪本。
+          </p>
+
+          <div className="flex justify-center gap-4 pt-4">
+            <Button className="h-14 px-8 rounded-full text-xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border-2 border-white/20">
+              🚀 開始創作故事
+            </Button>
+            <Button variant="outline" className="h-14 px-8 rounded-full text-xl font-bold bg-white/50 backdrop-blur-sm border-2 border-white hover:bg-white/80 text-gray-700 shadow-lg hover:shadow-xl transition-all">
+              📺 觀看展示影片
+            </Button>
           </div>
         </div>
 
-        {/* 按鈕展示區 */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>🎮 互動按鈕展示</CardTitle>
-            <CardDescription>點擊不同的按鈕看看效果！</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-3">
-              <Button variant="default">主要按鈕</Button>
-              <Button variant="secondary">次要按鈕</Button>
-              <Button variant="success">成功按鈕</Button>
-              <Button variant="warning">警告按鈕</Button>
-              <Button variant="accent">強調按鈕</Button>
-              <Button variant="outline">外框按鈕</Button>
-              <Button variant="ghost">透明按鈕</Button>
+        {/* Floating Stats Cards - Glassmorphism */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {[
+            { label: '繪畫風格', value: '50+', icon: Palette, color: 'text-pink-500', bg: 'bg-pink-50' },
+            { label: '故事創作', value: '10k+', icon: BookOpen, color: 'text-blue-500', bg: 'bg-blue-50' },
+            { label: 'AI 語音', value: 'Pro', icon: Mic, color: 'text-purple-500', bg: 'bg-purple-50' },
+            { label: '快樂讀者', value: '100%', icon: Heart, color: 'text-red-500', bg: 'bg-red-50' },
+          ].map((stat, i) => (
+            <div key={i} className="group relative bg-white/60 backdrop-blur-xl rounded-3xl p-6 border border-white/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className={`absolute top-4 right-4 p-3 rounded-2xl ${stat.bg} ${stat.color} opacity-80 group-hover:scale-110 transition-transform`}>
+                <stat.icon className="w-6 h-6" />
+              </div>
+              <div className="text-4xl font-black text-gray-800 mb-1">{stat.value}</div>
+              <div className="text-gray-500 font-bold">{stat.label}</div>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <Button size="sm">小按鈕</Button>
-              <Button size="default">預設按鈕</Button>
-              <Button size="lg">大按鈕</Button>
+          ))}
+        </div>
+
+        {/* Feature Showcase - Split Layout */}
+        <div className="grid md:grid-cols-12 gap-8 items-start">
+
+          {/* Left: Quick Create Form */}
+          <div className="md:col-span-5 relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-pink-400 to-purple-500 rounded-[2.5rem] rotate-3 opacity-20 blur-xl"></div>
+            <Card className="relative bg-white/70 backdrop-blur-2xl border-white/80 shadow-2xl rounded-[2rem] overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500"></div>
+              <CardContent className="p-8 space-y-8">
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-black text-gray-800 flex items-center gap-2">
+                    <Wand2 className="w-6 h-6 text-purple-500" />
+                    快速施法
+                  </h3>
+                  <p className="text-gray-500">30秒內創造你的第一個故事！</p>
+                </div>
+
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700 ml-1">我是誰？ (主角名稱)</label>
+                    <Input className="h-14 rounded-2xl bg-white/50 border-2 border-purple-100 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 text-lg transition-all" placeholder="例如：勇敢的小雷" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700 ml-1">關於什麼的故事？</label>
+                    <Input className="h-14 rounded-2xl bg-white/50 border-2 border-purple-100 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 text-lg transition-all" placeholder="例如：尋找魔法寶石" />
+                  </div>
+
+                  <div className="pt-2">
+                    <Button
+                      onClick={handleCreateStory}
+                      disabled={isLoading}
+                      className="w-full h-16 rounded-2xl bg-gradient-to-br from-gray-900 to-gray-800 hover:from-black hover:to-gray-900 text-white text-xl font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300"
+                    >
+                      {isLoading ? (
+                        <span className="flex items-center gap-2"><Loading size="sm" /> 正在施法中...</span>
+                      ) : (
+                        <span className="flex items-center gap-2">✨ 立即生成故事 <ArrowRight className="w-5 h-5" /></span>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right: Style Grid */}
+          <div className="md:col-span-7 space-y-6">
+            <div className="flex items-center justify-between px-2">
+              <h2 className="text-3xl font-black text-gray-800">熱門畫風選擇</h2>
+              <Button variant="ghost" className="text-purple-600 font-bold hover:bg-purple-50">查看全部 (50+)</Button>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* 載入狀態展示 */}
-        {isLoading && (
-          <Card className="mb-8">
-            <CardContent>
-              <Loading size="lg" emoji="✨" message="正在創造你的專屬故事..." />
-            </CardContent>
-          </Card>
-        )}
+            <div className="grid grid-cols-2 gap-4">
+              {storyStyles.map((style) => (
+                <div
+                  key={style.id}
+                  onClick={() => setSelectedCard(style.id)}
+                  className={`
+                      group cursor-pointer relative overflow-hidden rounded-[2rem] p-6 transition-all duration-300
+                      ${selectedCard === style.id ? 'ring-4 ring-offset-4 ring-purple-500 scale-[1.02] shadow-2xl z-10' : 'hover:scale-[1.03] hover:shadow-xl bg-white/60'}
+                    `}
+                >
+                  {/* Card Background Gradient */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${style.color} opacity-10 group-hover:opacity-20 transition-opacity`}></div>
 
-        {/* 底部提示卡片 */}
-        <Card className="bg-gradient-to-r from-children-info/20 to-children-secondary/20 border-children-info">
-          <CardContent className="text-center py-8">
-            <div className="text-6xl mb-4">🌟</div>
-            <h3 className="text-children-lg font-bold text-children-text-primary mb-2">
-              準備好開始你的創作之旅了嗎？
-            </h3>
-            <p className="text-children-md text-children-text-secondary mb-6">
-              每個孩子都是天生的故事創作家，讓我們一起創造屬於你的奇幻世界！
+                  <div className="relative z-10 flex flex-col items-center text-center gap-3">
+                    <div className="text-6xl drop-shadow-md group-hover:scale-110 transition-transform duration-500 filter hover:brightness-110">{style.emoji}</div>
+                    <div>
+                      <h4 className="text-xl font-black text-gray-800 mb-1">{style.name}</h4>
+                      <p className="text-xs font-bold text-gray-500 line-clamp-1">{style.description}</p>
+                    </div>
+
+                    {selectedCard === style.id && (
+                      <div className="absolute top-4 right-4 bg-white text-purple-600 p-1 rounded-full shadow-md animate-scale-in">
+                        <Star className="w-4 h-4 fill-current" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Feature Pills */}
+            <div className="flex flex-wrap gap-3 pt-4">
+              {[
+                { icon: Music, text: '背景音樂生成' },
+                { icon: Mic, text: '聲音複製技術' },
+                { icon: PlayCircle, text: '自動動畫化' }
+              ].map((feat, i) => (
+                <div key={i} className="flex items-center gap-2 px-4 py-2 bg-white/40 border border-white/60 rounded-full font-bold text-gray-600 shadow-sm backdrop-blur-sm">
+                  <feat.icon className="w-4 h-4 text-purple-500" />
+                  {feat.text}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom CTA Banner */}
+        <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl">
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-30 mix-blend-overlay"></div>
+
+          <div className="relative z-10 px-8 py-12 md:py-16 text-center space-y-6">
+            <h2 className="text-3xl md:text-5xl font-black text-white drop-shadow-lg">
+              準備好開始你的冒險了嗎？
+            </h2>
+            <p className="text-white/90 text-lg md:text-xl font-medium max-w-2xl mx-auto">
+              加入超過 1,000 個家庭，一起用故事連結親子時光。
+              <br className="hidden md:block" />
+              現在註冊，即可免費獲得 3 個魔法故事額度！
             </p>
-            <div className="flex justify-center gap-4 flex-wrap">
-              <Button variant="default" size="lg">
-                <Sparkles className="w-5 h-5 mr-2" />
-                開始創作
-              </Button>
-              <Button variant="secondary" size="lg">
-                <Heart className="w-5 h-5 mr-2" />
-                查看範例
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            <Button size="lg" className="h-16 px-10 rounded-full bg-white text-purple-600 text-xl font-black shadow-xl hover:bg-gray-50 hover:scale-105 transition-all">
+              🎁 免費領取額度
+            </Button>
+          </div>
+        </div>
+
       </div>
     </div>
   );

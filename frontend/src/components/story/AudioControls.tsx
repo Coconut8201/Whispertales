@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { AudioPlayerManager, AudioState } from '../../utils/storyPlayer';
-import '../../styles/ChildrenTheme.css';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Play, Square, SkipBack, SkipForward, Volume2, AudioWaveform } from 'lucide-react';
+import { Loading } from '../ui/loading';
 
 interface AudioControlsProps {
   audioPlayer: AudioPlayerManager | null;
@@ -66,14 +69,14 @@ const AudioControls: React.FC<AudioControlsProps> = ({
   // 如果音頻播放器未初始化或沒有音頻數據，顯示加載狀態
   if (!audioPlayer || !isInitialized) {
     return (
-      <div className={`children-card ${className}`}>
-        <div style={{ textAlign: 'center', padding: '20px' }}>
-          <div className="children-loading-spinner" style={{ margin: '0 auto 16px' }}></div>
-          <div style={{ color: '#636e72', fontSize: '14px' }}>
-            🎵 正在準備故事朗讀...
-          </div>
-        </div>
-      </div>
+      <Card className={`border-2 border-children-info/20 ${className}`}>
+        <CardContent className="flex flex-col items-center justify-center py-8">
+          <Loading size="md" emoji="🎵" />
+          <p className="text-gray-500 text-sm mt-4">
+            正在準備故事朗讀...
+          </p>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -82,166 +85,109 @@ const AudioControls: React.FC<AudioControlsProps> = ({
   const canPlayNext = currentPage < totalPages - 1 && audioState.audioUrls[currentPage + 1];
 
   return (
-    <div className={`children-card ${className}`}>
-      <div style={{ textAlign: 'center' }}>
-        <h3 style={{ 
-          color: '#ff6b6b', 
-          marginBottom: '20px',
-          fontSize: '18px',
-          fontWeight: 'bold'
-        }}>
-          🎵 故事朗讀控制
-        </h3>
+    <Card className={`border-2 border-children-info/20 shadow-children-sm ${className}`}>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg text-children-info flex items-center justify-center gap-2">
+          <AudioWaveform className="w-5 h-5" />
+          故事朗讀控制
+        </CardTitle>
+      </CardHeader>
 
+      <CardContent className="text-center space-y-4">
         {/* 播放狀態顯示 */}
         {audioState.isPlaying && (
-          <div style={{ 
-            color: '#6bcf7f', 
-            fontSize: '16px', 
-            marginBottom: '16px',
-            fontWeight: 'bold',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px'
-          }}>
-            <span style={{ animation: 'pulse 1.5s infinite' }}>🔊</span>
-            正在播放第 {audioState.currentPage + 1} 頁
+          <div className="flex items-center justify-center gap-2 text-green-500 font-bold bg-green-50 py-2 rounded-lg animate-fade-in">
+            <Volume2 className="w-4 h-4 animate-pulse" />
+            <span>正在播放第 {audioState.currentPage + 1} 頁</span>
           </div>
         )}
 
         {/* 主要控制按鈕 */}
-        <div style={{ 
-          display: 'flex', 
-          gap: '12px', 
-          justifyContent: 'center',
-          marginBottom: '16px',
-          flexWrap: 'wrap'
-        }}>
-          {/* 播放當前頁 */}
-          <button
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button
             onClick={handlePlayPage}
             disabled={disabled || !hasAudioForCurrentPage || audioState.isPlaying}
-            className="children-btn children-btn-primary"
-            style={{ 
-              fontSize: '14px',
-              padding: '12px 20px',
-              minWidth: '120px'
-            }}
+            className="flex-1 min-w-[120px]"
+            variant="default"
           >
             {audioState.isPlaying && audioState.currentPage === currentPage ? (
-              '🔊 播放中'
+              <>
+                <Volume2 className="w-4 h-4 mr-2 animate-pulse" />
+                播放中
+              </>
             ) : (
-              '▶️ 播放本頁'
+              <>
+                <Play className="w-4 h-4 mr-2" />
+                播放本頁
+              </>
             )}
-          </button>
+          </Button>
 
-          {/* 停止播放 */}
           {audioState.isPlaying && (
-            <button
+            <Button
               onClick={handleStop}
               disabled={disabled}
-              className="children-btn children-btn-warning"
-              style={{ 
-                fontSize: '14px',
-                padding: '12px 20px',
-                minWidth: '100px'
-              }}
+              variant="destructive"
+              className="flex-none px-4"
             >
-              ⏹️ 停止
-            </button>
+              <Square className="w-4 h-4" />
+            </Button>
           )}
 
-          {/* 播放全部 */}
-          <button
+          <Button
             onClick={handlePlayAll}
             disabled={disabled || audioState.isPlaying || audioState.audioUrls.every(url => !url)}
-            className="children-btn children-btn-success"
-            style={{ 
-              fontSize: '14px',
-              padding: '12px 20px',
-              minWidth: '120px'
-            }}
+            className="flex-1 min-w-[120px] bg-green-500 hover:bg-green-600 text-white"
           >
-            🎭 播放全部
-          </button>
+            <AudioWaveform className="w-4 h-4 mr-2" />
+            播放全部
+          </Button>
         </div>
 
         {/* 頁面導航控制 */}
-        <div style={{ 
-          display: 'flex', 
-          gap: '8px', 
-          justifyContent: 'center',
-          marginBottom: '16px'
-        }}>
-          <button
+        <div className="flex justify-center gap-3">
+          <Button
             onClick={handlePlayPrevious}
             disabled={disabled || !canPlayPrevious || audioState.isPlaying}
-            className="children-btn children-btn-secondary"
-            style={{ 
-              fontSize: '12px',
-              padding: '8px 16px',
-              minWidth: 'auto'
-            }}
+            variant="outline"
+            size="sm"
+            className="flex-1"
           >
-            ⏮️ 上一頁
-          </button>
+            <SkipBack className="w-4 h-4 mr-1" />
+            上一頁
+          </Button>
 
-          <button
+          <Button
             onClick={handlePlayNext}
             disabled={disabled || !canPlayNext || audioState.isPlaying}
-            className="children-btn children-btn-secondary"
-            style={{ 
-              fontSize: '12px',
-              padding: '8px 16px',
-              minWidth: 'auto'
-            }}
+            variant="outline"
+            size="sm"
+            className="flex-1"
           >
-            下一頁 ⏭️
-          </button>
+            下一頁
+            <SkipForward className="w-4 h-4 ml-1" />
+          </Button>
         </div>
 
         {/* 頁面信息 */}
-        <div style={{ 
-          fontSize: '14px', 
-          color: '#636e72',
-          marginBottom: '12px'
-        }}>
+        <div className="text-sm text-gray-500 font-medium">
           📄 第 {currentPage + 1} 頁 / 共 {totalPages} 頁
         </div>
 
-        {/* 音頻可用性提示 */}
+        {/* 提示信息 */}
         {!hasAudioForCurrentPage && (
-          <div style={{ 
-            color: '#ffb347', 
-            fontSize: '12px',
-            fontStyle: 'italic'
-          }}>
+          <p className="text-xs text-orange-400 italic">
             ⚠️ 此頁面暫無語音朗讀
-          </div>
+          </p>
         )}
 
-        {/* 使用提示 */}
         {!audioState.isPlaying && hasAudioForCurrentPage && (
-          <div style={{ 
-            color: '#4ecdc4', 
-            fontSize: '12px',
-            marginTop: '8px',
-            fontStyle: 'italic'
-          }}>
+          <p className="text-xs text-teal-500 italic">
             💡 點擊「播放本頁」聽故事朗讀
-          </div>
+          </p>
         )}
-      </div>
-
-      <style>{`
-        @keyframes pulse {
-          0% { opacity: 1; }
-          50% { opacity: 0.5; }
-          100% { opacity: 1; }
-        }
-      `}</style>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

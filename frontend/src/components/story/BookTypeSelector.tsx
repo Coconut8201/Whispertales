@@ -1,5 +1,6 @@
 import React from 'react';
-import '../../styles/ChildrenTheme.css';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { BookOpen } from 'lucide-react';
 
 interface BookTypeSelectorProps {
   selectedBookType: string;
@@ -17,37 +18,39 @@ const BookTypeSelector: React.FC<BookTypeSelectorProps> = ({
   error
 }) => {
   return (
-    <div className="children-card">
-      <label className="children-label">
-        📚 選擇繪本種類
-      </label>
-      <select
-        className="children-select"
-        value={selectedBookType}
-        onChange={(e) => onBookTypeChange(e.target.value)}
-        disabled={disabled}
-        style={{
-          borderColor: error ? '#ff6b6b' : undefined
-        }}
-      >
-        <option value="">請選擇繪本種類</option>
-        {bookTypeOptions.map((bookType, index) => (
-          <option key={index} value={bookType}>
-            📖 {bookType}
-          </option>
-        ))}
-      </select>
-      {error && (
-        <div style={{ color: '#ff6b6b', fontSize: '14px', marginTop: '8px' }}>
-          ⚠️ {error}
-        </div>
-      )}
-      {!selectedBookType && !error && (
-        <div style={{ color: '#74b9ff', fontSize: '14px', marginTop: '8px' }}>
-          💡 選擇想要創作的繪本類型！
-        </div>
-      )}
-    </div>
+    <Card className={`h-full border-2 shadow-children-sm hover:shadow-children-md transition-all ${error ? 'border-red-300' : 'border-children-primary/20'}`}>
+      <CardHeader className="pb-3">
+        <CardTitle className={`text-lg flex items-center gap-2 ${error ? 'text-red-500' : 'text-children-primary'}`}>
+          <BookOpen className="w-5 h-5" />
+          選擇繪本種類
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <select
+          className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${error ? 'border-red-400 focus-visible:ring-red-400' : 'border-children-primary/30 focus-visible:ring-children-primary'}`}
+          value={selectedBookType}
+          onChange={(e) => onBookTypeChange(e.target.value)}
+          disabled={disabled}
+        >
+          <option value="">請選擇繪本種類</option>
+          {bookTypeOptions.map((bookType, index) => (
+            <option key={index} value={bookType}>
+              📖 {bookType}
+            </option>
+          ))}
+        </select>
+        {error && (
+          <p className="mt-2 text-xs text-red-500 font-bold">
+            ⚠️ {error}
+          </p>
+        )}
+        {!selectedBookType && !error && (
+          <p className="mt-2 text-xs text-blue-400">
+            💡 選擇想要創作的繪本類型！
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

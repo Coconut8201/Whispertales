@@ -1,6 +1,7 @@
 import { forwardRef, useRef, useImperativeHandle } from "react";
 import HTMLFlipBook from "react-pageflip";
-import "../../styles/ChildrenTheme.css";
+import { Button } from "../ui/button";
+import { RefreshCcw } from "lucide-react";
 
 interface PageProps {
   image: string;
@@ -28,79 +29,31 @@ const StoryPage = forwardRef<HTMLDivElement, PageProps>(
   ({ image, text, isLeft = true, isSpreadImage = false }, ref) => {
     return (
       <div
-        className="story-page"
+        className="bg-white relative overflow-hidden shadow-md rounded-lg h-full w-full"
         ref={ref}
-        style={{
-          width: "100%",
-          height: "100%",
-          backgroundColor: "#fff",
-          position: "relative",
-          overflow: "hidden",
-          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-          borderRadius: "8px",
-        }}
       >
         {/* 圖片區域 */}
-        <div
-          style={{
-            width: "100%",
-            height: "70%",
-            overflow: "hidden",
-            position: "relative",
-            borderRadius: "8px 8px 0 0",
-          }}
-        >
+        <div className="w-full h-[70%] overflow-hidden relative rounded-t-lg">
           <img
             src={`data:image/png;base64,${image}`}
             alt="Story illustration"
+            className={`h-full object-cover block ${isSpreadImage ? 'w-[200%]' : 'w-full'}`}
             style={{
-              width: isSpreadImage ? "200%" : "100%",
-              height: "100%",
-              objectFit: "cover",
-              display: "block",
               transform: isSpreadImage && !isLeft ? "translateX(-50%)" : "none",
             }}
             onError={(e) => {
               console.error("圖片載入失敗:", e);
-              // 可以設置一個預設圖片
             }}
           />
         </div>
 
         {/* 文字區域 */}
-        <div
-          style={{
-            height: "30%",
-            padding: "16px",
-            backgroundColor: "#fff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            textAlign: "center",
-            borderRadius: "0 0 8px 8px",
-          }}
-        >
-          <div
-            style={{
-              fontSize: "16px",
-              lineHeight: "1.6",
-              color: "#2d3436",
-              fontFamily: "'Noto Sans TC', sans-serif",
-              maxHeight: "100%",
-              overflow: "auto",
-            }}
-          >
+        <div className="h-[30%] p-4 bg-white flex items-center justify-center text-center rounded-b-lg">
+          <div className="text-base leading-relaxed text-gray-800 font-sans max-h-full overflow-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
             {typeof text === "string" ? (
-              <pre
-                style={{
-                  margin: 0,
-                  fontFamily: "inherit",
-                  whiteSpace: "pre-wrap",
-                  wordWrap: "break-word",
-                }}
-              >
+              <p className="whitespace-pre-wrap break-words m-0">
                 {text}
-              </pre>
+              </p>
             ) : (
               text
             )}
@@ -116,67 +69,30 @@ const CoverPage = forwardRef<HTMLDivElement, { title: string; image?: string }>(
   ({ title, image }, ref) => {
     return (
       <div
-        className="story-cover-page"
+        className="w-full h-full bg-gradient-to-br from-[#ff6b6b] to-[#ffd93d] flex flex-col items-center justify-center text-white text-center p-10 shadow-md rounded-lg relative overflow-hidden"
         ref={ref}
-        style={{
-          width: "100%",
-          height: "100%",
-          background: "linear-gradient(135deg, #ff6b6b 0%, #ffd93d 100%)",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "white",
-          textAlign: "center",
-          padding: "40px",
-          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-          borderRadius: "8px",
-        }}
       >
-        <h1
-          style={{
-            fontSize: "32px",
-            fontWeight: "bold",
-            marginBottom: "20px",
-            textShadow: "2px 2px 4px rgba(0, 0, 0, 0.3)",
-            fontFamily: "'Noto Sans TC', sans-serif",
-          }}
-        >
-          🌟 {title} 🌟
-        </h1>
+        <div className="absolute inset-0 bg-white/10 pattern-dots" />
 
-        {image && (
-          <div
-            style={{
-              width: "200px",
-              height: "150px",
-              borderRadius: "16px",
-              overflow: "hidden",
-              boxShadow: "0 8px 16px rgba(0, 0, 0, 0.2)",
-              marginBottom: "20px",
-            }}
-          >
-            <img
-              src={`data:image/png;base64,${image}`}
-              alt="Story cover"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
-            />
-          </div>
-        )}
+        <div className="relative z-10 flex flex-col items-center">
+          <h1 className="text-3xl md:text-4xl font-bold mb-6 text-shadow-md font-sans tracking-tight">
+            🌟 {title} 🌟
+          </h1>
 
-        <p
-          style={{
-            fontSize: "18px",
-            opacity: 0.9,
-            fontWeight: "500",
-          }}
-        >
-          📖 點擊右下角開始閱讀
-        </p>
+          {image && (
+            <div className="w-[200px] h-[150px] rounded-2xl overflow-hidden shadow-2xl mb-6 border-4 border-white/30 transform hover:scale-105 transition-transform duration-500">
+              <img
+                src={`data:image/png;base64,${image}`}
+                alt="Story cover"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+
+          <p className="text-lg md:text-xl font-medium opacity-90 animate-pulse">
+            📖 點擊右下角開始閱讀
+          </p>
+        </div>
       </div>
     );
   },
@@ -187,67 +103,35 @@ const EndPage = forwardRef<HTMLDivElement, { onRestart?: () => void }>(
   ({ onRestart }, ref) => {
     return (
       <div
-        className="story-end-page"
+        className="w-full h-full bg-gradient-to-br from-[#4ecdc4] to-[#74b9ff] flex flex-col items-center justify-center text-white text-center p-10 shadow-md rounded-lg relative overflow-hidden"
         ref={ref}
-        style={{
-          width: "100%",
-          height: "100%",
-          background: "linear-gradient(135deg, #4ecdc4 0%, #74b9ff 100%)",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "white",
-          textAlign: "center",
-          padding: "40px",
-          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-          borderRadius: "8px",
-        }}
       >
-        <div
-          style={{
-            fontSize: "64px",
-            marginBottom: "20px",
-          }}
-        >
-          🎉
+        <div className="absolute inset-0 bg-white/10 pattern-grid" />
+
+        <div className="relative z-10 flex flex-col items-center">
+          <div className="text-6xl mb-6 animate-bounce">
+            🎉
+          </div>
+
+          <h2 className="text-3xl font-bold mb-4 text-shadow-md font-sans">
+            故事結束了！
+          </h2>
+
+          <p className="text-lg opacity-90 mb-8 max-w-xs mx-auto">
+            希望你喜歡這個美麗的故事 ✨
+          </p>
+
+          {onRestart && (
+            <Button
+              onClick={onRestart}
+              variant="outline"
+              className="bg-white/20 border-2 border-white text-white hover:bg-white/30 hover:text-white transition-all text-lg py-6 px-8 rounded-full"
+            >
+              <RefreshCcw className="w-5 h-5 mr-2" />
+              重新閱讀
+            </Button>
+          )}
         </div>
-
-        <h2
-          style={{
-            fontSize: "28px",
-            fontWeight: "bold",
-            marginBottom: "16px",
-            textShadow: "2px 2px 4px rgba(0, 0, 0, 0.3)",
-            fontFamily: "'Noto Sans TC', sans-serif",
-          }}
-        >
-          故事結束了！
-        </h2>
-
-        <p
-          style={{
-            fontSize: "18px",
-            opacity: 0.9,
-            marginBottom: "30px",
-          }}
-        >
-          希望你喜歡這個美麗的故事 ✨
-        </p>
-
-        {onRestart && (
-          <button
-            onClick={onRestart}
-            className="children-btn children-btn-primary"
-            style={{
-              backgroundColor: "rgba(255, 255, 255, 0.2)",
-              border: "2px solid white",
-              color: "white",
-            }}
-          >
-            🔄 重新閱讀
-          </button>
-        )}
       </div>
     );
   },
@@ -312,10 +196,7 @@ const StoryFlipBook = forwardRef<StoryFlipBookRef, StoryFlipBookProps>(
     ];
 
     return (
-      <div
-        className={`story-flipbook-container ${className}`}
-        style={{ position: "relative" }}
-      >
+      <div className={`relative ${className} perspective-1000`}>
         <HTMLFlipBook
           ref={flipBookRef}
           width={400}
@@ -329,10 +210,8 @@ const StoryFlipBook = forwardRef<StoryFlipBookRef, StoryFlipBookProps>(
           showCover={true}
           mobileScrollSupport={true}
           onFlip={handlePageChange}
-          className="demo-book"
-          style={{
-            margin: "0 auto",
-          }}
+          className="mx-auto shadow-2xl"
+          style={{}}
           startPage={0}
           drawShadow={true}
           flippingTime={1000}
@@ -350,19 +229,7 @@ const StoryFlipBook = forwardRef<StoryFlipBookRef, StoryFlipBookProps>(
 
         {/* 頁數顯示 */}
         {showPageNumbers && (
-          <div
-            style={{
-              position: "absolute",
-              bottom: "10px",
-              right: "10px",
-              backgroundColor: "rgba(0, 0, 0, 0.7)",
-              color: "white",
-              padding: "8px 12px",
-              borderRadius: "16px",
-              fontSize: "14px",
-              fontWeight: "bold",
-            }}
-          >
+          <div className="absolute bottom-4 right-4 bg-black/60 text-white px-3 py-1.5 rounded-full text-sm font-bold backdrop-blur-sm z-50">
             📄 {Math.max(0, pages.length)} 頁
           </div>
         )}

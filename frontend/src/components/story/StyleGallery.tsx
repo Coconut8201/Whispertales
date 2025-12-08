@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { PicStyle } from "../../utils/bookStyleList";
-import "../../styles/ChildrenTheme.css";
+import { Card, CardContent } from "../ui/card";
+import { Check, Palette, Sparkles } from "lucide-react";
 
 interface StyleGalleryProps {
   options: PicStyle[];
@@ -32,202 +33,88 @@ const StyleGallery: React.FC<StyleGalleryProps> = ({
   };
 
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-        gap: "24px",
-        padding: "20px 0",
-      }}
-    >
-      {options.map((option, index) => (
-        <div
-          key={`${option.show_name}-${index}`}
-          className="children-card"
-          onClick={() => handleCardClick(option.show_name)}
-          onDoubleClick={handleCardDoubleClick}
-          onMouseEnter={() => setHoveredIndex(index)}
-          onMouseLeave={() => setHoveredIndex(-1)}
-          style={{
-            cursor: disabled ? "not-allowed" : "pointer",
-            transform:
-              hoveredIndex === index
-                ? "translateY(-8px) scale(1.02)"
-                : "translateY(0) scale(1)",
-            transition: "all 0.3s ease",
-            border:
-              selectedStyle === option.show_name
-                ? "4px solid #ff6b6b"
-                : "3px solid transparent",
-            position: "relative",
-            overflow: "hidden",
-            opacity: disabled ? 0.6 : 1,
-          }}
-        >
-          {/* 選中指示器 */}
-          {selectedStyle === option.show_name && (
-            <div
-              style={{
-                position: "absolute",
-                top: "12px",
-                right: "12px",
-                backgroundColor: "#ff6b6b",
-                color: "white",
-                borderRadius: "50%",
-                width: "32px",
-                height: "32px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "16px",
-                fontWeight: "bold",
-                zIndex: 2,
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
-              }}
-            >
-              ✓
-            </div>
-          )}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-5">
+      {options.map((option, index) => {
+        const isSelected = selectedStyle === option.show_name;
+        const isHovered = hoveredIndex === index;
 
-          {/* 圖片容器 */}
-          <div
-            style={{
-              width: "100%",
-              height: "250px",
-              overflow: "hidden",
-              borderRadius:
-                "var(--border-radius-md) var(--border-radius-md) 0 0",
-              position: "relative",
-            }}
+        return (
+          <Card
+            key={`${option.show_name}-${index}`}
+            className={`
+              relative overflow-hidden cursor-pointer transition-all duration-300 transform
+              ${disabled ? "opacity-60 cursor-not-allowed grayscale" : ""}
+              ${isSelected ? "ring-4 ring-children-primary ring-offset-2 scale-[1.02] shadow-xl" : "hover:shadow-lg hover:-translate-y-1"}
+            `}
+            onClick={() => handleCardClick(option.show_name)}
+            onDoubleClick={handleCardDoubleClick}
+            onMouseEnter={() => setHoveredIndex(index)}
+            onMouseLeave={() => setHoveredIndex(-1)}
           >
-            <img
-              src={option.image_path}
-              alt={option.show_name}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                transition: "transform 0.3s ease",
-                transform: hoveredIndex === index ? "scale(1.1)" : "scale(1)",
-              }}
-              onError={(e) => {
-                // 圖片載入失敗時的處理
-                (e.target as HTMLImageElement).src =
-                  "/Assets/default-style.png";
-              }}
-            />
+            {/* 選中指示器 */}
+            {isSelected && (
+              <div className="absolute top-3 right-3 z-20 bg-children-primary text-white rounded-full w-8 h-8 flex items-center justify-center font-bold shadow-md animate-scale-in">
+                <Check className="w-5 h-5" />
+              </div>
+            )}
 
-            {/* 懸停覆蓋層 */}
-            {hoveredIndex === index && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background:
-                    "linear-gradient(45deg, rgba(255, 107, 107, 0.1) 0%, rgba(255, 217, 61, 0.1) 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  transition: "opacity 0.3s ease",
+            {/* 圖片容器 */}
+            <div className="relative w-full h-[250px] overflow-hidden bg-gray-100">
+              <img
+                src={option.image_path}
+                alt={option.show_name}
+                className={`w-full h-full object-cover transition-transform duration-500 will-change-transform ${isHovered ? "scale-110" : "scale-100"}`}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/Assets/default-style.png";
                 }}
-              >
-                <div
-                  style={{
-                    backgroundColor: "rgba(255, 255, 255, 0.9)",
-                    padding: "8px 16px",
-                    borderRadius: "20px",
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                    color: "#ff6b6b",
-                  }}
-                >
-                  {selectedStyle === option.show_name
-                    ? "✨ 已選擇"
-                    : "🎨 點擊選擇"}
+              />
+
+              {/* 懸停覆蓋層 - 僅在非禁用狀態下顯示 */}
+              {!disabled && isHovered && !isSelected && (
+                <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center animate-fade-in">
+                  <div className="bg-white/90 text-children-primary px-4 py-2 rounded-full font-bold shadow-lg flex items-center gap-2 transform">
+                    <Palette className="w-4 h-4" />
+                    點擊選擇
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* 標題區域 */}
-          <div
-            style={{
-              padding: "20px",
-              textAlign: "center",
-              background:
-                selectedStyle === option.show_name
-                  ? "linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%)"
-                  : "white",
-            }}
-          >
-            <h4
-              style={{
-                margin: 0,
-                fontSize: "18px",
-                fontWeight: "bold",
-                color:
-                  selectedStyle === option.show_name ? "#ff6b6b" : "#2d3436",
-                marginBottom: "8px",
-              }}
-            >
-              🎨 {option.show_name}
-            </h4>
-
-            {selectedStyle === option.show_name && (
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "14px",
-                  color: "#ff6b6b",
-                  fontWeight: "500",
-                }}
-              >
-                ✨ 這是你選擇的風格！
-              </p>
-            )}
-
-            {selectedStyle !== option.show_name && (
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "14px",
-                  color: "#636e72",
-                  fontStyle: "italic",
-                }}
-              >
-                {option.description}
-              </p>
-            )}
-          </div>
-
-          {/* 雙擊提示 */}
-          {selectedStyle === option.show_name && (
-            <div
-              style={{
-                padding: "0 20px 16px",
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  backgroundColor: "#4ecdc4",
-                  color: "white",
-                  padding: "8px 16px",
-                  borderRadius: "20px",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  display: "inline-block",
-                }}
-              >
-                💫 雙擊開始創作故事！
-              </div>
+              )}
             </div>
-          )}
-        </div>
-      ))}
+
+            {/* 標題區域 */}
+            <CardContent className={`
+              text-center p-4 transition-colors duration-300
+              ${isSelected ? "bg-gradient-to-br from-red-50 to-pink-50" : "bg-white"}
+            `}>
+              <h4 className={`
+                text-lg font-bold mb-2 flex items-center justify-center gap-2
+                ${isSelected ? "text-children-primary" : "text-gray-700"}
+              `}>
+                {isSelected ? <Sparkles className="w-4 h-4 text-yellow-400" /> : null}
+                {option.show_name}
+              </h4>
+
+              {isSelected ? (
+                <p className="text-sm text-children-primary font-medium bg-white/50 py-1 px-2 rounded-full inline-block">
+                  ✨ 這是你選擇的風格！
+                </p>
+              ) : (
+                <p className="text-sm text-gray-500 line-clamp-2 min-h-[40px]">
+                  {option.description || "一個獨特的繪畫風格，讓你的故事更生動。"}
+                </p>
+              )}
+
+              {/* 雙擊提示 */}
+              {isSelected && !disabled && (
+                <div className="mt-4 animate-bounce-slow">
+                  <span className="bg-children-secondary text-white text-xs font-bold py-1.5 px-4 rounded-full shadow-md">
+                    💫 雙擊開始創作故事！
+                  </span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 };

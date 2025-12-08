@@ -3,7 +3,9 @@ import {
   createSpeechRecognition,
   SpeechRecognitionService,
 } from "../../utils/speechRecognition";
-import "../../styles/ChildrenTheme.css";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Button } from "../ui/button";
+import { Mic, MicOff, Trash2, FileText, AlertCircle } from "lucide-react";
 
 interface DescriptionFormProps {
   description: string;
@@ -23,10 +25,8 @@ const DescriptionForm: React.FC<DescriptionFormProps> = ({
   const speechRecognitionRef = useRef<SpeechRecognitionService | null>(null);
 
   const startRecording = () => {
-    // 清除之前的錯誤
     setRecordingError("");
 
-    // 檢查瀏覽器支持
     if (!SpeechRecognitionService.isSupported()) {
       const errorMsg =
         "您的瀏覽器不支援語音輸入功能。請使用 Chrome、Edge 或 Safari 瀏覽器。";
@@ -35,7 +35,6 @@ const DescriptionForm: React.FC<DescriptionFormProps> = ({
       return;
     }
 
-    // 如果已經有實例在運行，先停止
     if (speechRecognitionRef.current) {
       speechRecognitionRef.current.stopRecording();
       speechRecognitionRef.current = null;
@@ -52,7 +51,6 @@ const DescriptionForm: React.FC<DescriptionFormProps> = ({
       {
         onResult: (transcript) => {
           console.log("[DescriptionForm] 收到語音結果:", transcript);
-          // 將新的語音內容添加到現有描述後面
           const newDescription = description
             ? `${description} ${transcript}`
             : transcript;
@@ -63,7 +61,6 @@ const DescriptionForm: React.FC<DescriptionFormProps> = ({
           setIsRecording(false);
           setRecordingError(error);
 
-          // 只在關鍵錯誤時彈出提示
           if (error.includes("權限") || error.includes("not-allowed")) {
             alert(error);
           }
@@ -106,150 +103,99 @@ const DescriptionForm: React.FC<DescriptionFormProps> = ({
   };
 
   const wordCount = description.trim().length;
-  const isValid = wordCount >= 10 && wordCount <= 1000;
+  // const isValid = wordCount >= 10 && wordCount <= 1000;
 
   return (
-    <div className="children-card">
-      <label className="children-label">📝 故事內容描述</label>
+    <Card className={`border-2 shadow-children-sm hover:shadow-children-md transition-all ${error ? 'border-red-300' : 'border-children-success/20'}`}>
+      <CardHeader className="pb-3">
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-lg text-children-success flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            故事內容描述
+          </CardTitle>
+          <div className={`text-xs px-2 py-1 rounded-full font-bold ${wordCount < 10 ? 'bg-red-100 text-red-600' :
+              wordCount > 1000 ? 'bg-red-100 text-red-600' :
+                'bg-green-100 text-green-600'
+            }`}>
+            {wordCount} / 1000 字
+          </div>
+        </div>
+      </CardHeader>
 
-      <div style={{ position: "relative" }}>
-        <textarea
-          className="children-textarea"
-          value={description}
-          onChange={(e) => onDescriptionChange(e.target.value)}
-          placeholder="告訴我你想要什麼樣的故事...
+      <CardContent className="space-y-4">
+        <div className="relative">
+          <textarea
+            className={`flex min-h-[150px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y pr-12 
+              ${error ? 'border-red-300 focus-visible:ring-red-400' : 'border-children-success/30 focus-visible:ring-children-success'}`}
+            value={description}
+            onChange={(e) => onDescriptionChange(e.target.value)}
+            placeholder="告訴我你想要什麼樣的故事...
 例如：小兔子和小熊是好朋友，他們一起去森林裡探險，遇到了魔法師..."
-          disabled={disabled}
-          style={{
-            minHeight: "150px",
-            borderColor: error ? "#ff6b6b" : isValid ? "#6bcf7f" : undefined,
-            paddingRight: "80px", // 為錄音按鈕留出空間
-          }}
-        />
-
-        {/* 語音輸入按鈕 */}
-        <div
-          style={{
-            position: "absolute",
-            top: "12px",
-            right: "12px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "8px",
-          }}
-        >
-          <button
-            onClick={isRecording ? stopRecording : startRecording}
-            className={`children-record-btn ${isRecording ? "recording" : ""}`}
             disabled={disabled}
-            title={isRecording ? "停止錄音" : "開始語音輸入"}
-          >
-            {isRecording ? "🛑" : "🎤"}
-          </button>
+          />
 
-          {description && (
-            <button
-              onClick={clearDescription}
-              className="children-btn children-btn-warning"
+          <div className="absolute top-2 right-2 flex flex-col gap-2">
+            <Button
+              onClick={isRecording ? stopRecording : startRecording}
+              size="icon"
+              variant={isRecording ? "destructive" : "secondary"}
+              className={`rounded-full shadow-sm transition-all ${isRecording ? 'animate-pulse' : ''}`}
               disabled={disabled}
-              style={{
-                padding: "8px",
-                fontSize: "12px",
-                minWidth: "auto",
-                borderRadius: "8px",
-              }}
-              title="清除內容"
+              title={isRecording ? "停止錄音" : "開始語音輸入"}
             >
-              🗑️
-            </button>
-          )}
-        </div>
-      </div>
+              {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </Button>
 
-      {/* 錄音狀態提示 */}
-      {isRecording && (
-        <div
-          style={{
-            color: "#e17055",
-            fontSize: "14px",
-            marginTop: "8px",
-            fontWeight: "bold",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <span style={{ animation: "pulse 1.5s infinite" }}>🔴</span>
-          正在錄音...請說出你的故事內容
-        </div>
-      )}
-
-      {/* 錄音錯誤提示 */}
-      {recordingError && !isRecording && (
-        <div
-          style={{
-            color: "#ff6b6b",
-            fontSize: "14px",
-            marginTop: "8px",
-            padding: "8px",
-            backgroundColor: "#ffe5e5",
-            borderRadius: "4px",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <span>⚠️</span>
-          <span>{recordingError}</span>
-        </div>
-      )}
-
-      {/* 字數統計和錯誤提示 */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginTop: "8px",
-          fontSize: "14px",
-        }}
-      >
-        <div
-          style={{
-            color:
-              wordCount < 10
-                ? "#ff6b6b"
-                : wordCount > 1000
-                  ? "#ff6b6b"
-                  : "#6bcf7f",
-          }}
-        >
-          📊 字數：{wordCount} / 1000
+            {description && (
+              <Button
+                onClick={clearDescription}
+                size="icon"
+                variant="ghost"
+                className="rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50"
+                disabled={disabled}
+                title="清除內容"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
-        {wordCount < 10 && (
-          <div style={{ color: "#ff6b6b" }}>還需要 {10 - wordCount} 個字</div>
+        {/* 錄音狀態提示 */}
+        {isRecording && (
+          <div className="flex items-center gap-2 text-sm text-red-500 font-bold animate-pulse">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+            </span>
+            正在錄音...請說出你的故事內容
+          </div>
         )}
-      </div>
 
-      {error && (
-        <div style={{ color: "#ff6b6b", fontSize: "14px", marginTop: "8px" }}>
-          ⚠️ {error}
-        </div>
-      )}
+        {/* 錄音錯誤提示 */}
+        {recordingError && !isRecording && (
+          <div className="flex items-center gap-2 text-sm bg-red-50 text-red-600 p-2 rounded-md border border-red-100">
+            <AlertCircle className="w-4 h-4" />
+            {recordingError}
+          </div>
+        )}
 
-      {!error && wordCount >= 10 && (
-        <div style={{ color: "#6bcf7f", fontSize: "14px", marginTop: "8px" }}>
-          ✅ 很棒！內容長度剛好
-        </div>
-      )}
-
-      {!error && wordCount === 0 && (
-        <div style={{ color: "#4ecdc4", fontSize: "14px", marginTop: "8px" }}>
-          💡 點擊麥克風按鈕可以用語音輸入，或者直接打字描述你的故事想法
-        </div>
-      )}
-    </div>
+        {/* 狀態提示 */}
+        {error ? (
+          <p className="text-sm text-red-500 font-bold flex items-center gap-1">
+            ⚠️ {error}
+          </p>
+        ) : wordCount < 10 ? (
+          <p className="text-xs text-orange-400">
+            👉 再多寫一點，至少需要 10 個字喔！
+          </p>
+        ) : (
+          <p className="text-xs text-green-500 font-bold flex items-center gap-1">
+            ✅ 很棒！內容長度剛好
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
